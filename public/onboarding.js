@@ -122,23 +122,51 @@ async function apiPost(endpoint, body, isFormData = false) {
     if (STATE.token) headers['Authorization'] = `Bearer ${STATE.token}`;
     if (!isFormData) headers['Content-Type'] = 'application/json';
 
-    const res = await fetch(`${API}${endpoint}`, {
-        method: 'POST',
-        headers,
-        body: isFormData ? body : JSON.stringify(body),
-    });
+    try {
+        const res = await fetch(`${API}${endpoint}`, {
+            method: 'POST',
+            headers,
+            body: isFormData ? body : JSON.stringify(body),
+        });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Request failed.');
-    return data;
+        // Check if response is JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server error: API endpoint not available. Please ensure backend is deployed.');
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Request failed.');
+        return data;
+    } catch (error) {
+        if (error.message.includes('Failed to fetch')) {
+            throw new Error('Cannot connect to server. Please check your internet connection.');
+        }
+        throw error;
+    }
 }
 
 async function apiGet(endpoint) {
     const headers = STATE.token ? { 'Authorization': `Bearer ${STATE.token}` } : {};
-    const res = await fetch(`${API}${endpoint}`, { headers });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Request failed.');
-    return data;
+    
+    try {
+        const res = await fetch(`${API}${endpoint}`, { headers });
+        
+        // Check if response is JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server error: API endpoint not available. Please ensure backend is deployed.');
+        }
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Request failed.');
+        return data;
+    } catch (error) {
+        if (error.message.includes('Failed to fetch')) {
+            throw new Error('Cannot connect to server. Please check your internet connection.');
+        }
+        throw error;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════
