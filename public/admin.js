@@ -1577,7 +1577,7 @@ async function loadSystemHealth() {
         
         try {
             const geminiStart = Date.now();
-            const geminiTest = await fetch('/api/sos/nexa-chat', {
+            const geminiTest = await fetch('/api/sos/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
