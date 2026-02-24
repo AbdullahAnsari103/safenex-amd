@@ -1,9 +1,15 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+
+// Use /tmp directory for Vercel serverless functions
+// Vercel's filesystem is read-only except for /tmp
+const uploadsDir = process.env.VERCEL === '1' 
+    ? path.join(os.tmpdir(), 'uploads')
+    : path.join(__dirname, '..', 'uploads');
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }

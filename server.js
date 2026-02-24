@@ -15,7 +15,7 @@ const io = new Server(server, {
         origin: '*',
         methods: ['GET', 'POST'],
     },
-    
+
 });
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
@@ -150,11 +150,16 @@ app.use(errorHandler);
 // ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
-(async () => {
-    await initDB();
-    
-    const serverInstance = server.listen(PORT, () => {
-        console.log(`
+// Initialize database
+initDB().catch(err => {
+    console.error('Failed to initialize database:', err);
+});
+
+// Only start server if not running on Vercel (Vercel handles this)
+if (process.env.VERCEL !== '1') {
+    (async () => {
+        const serverInstance = server.listen(PORT, () => {
+            console.log(`
 ╔════════════════════════════════════════╗
 ║   🛡️  SafeNex Identity System          ║
 ║   Server running on port ${PORT}          ║
@@ -162,23 +167,24 @@ const PORT = process.env.PORT || 5000;
 ║   Mode: ${process.env.NODE_ENV || 'development'}              ║
 ║   Real-time: Socket.IO ✅              ║
 ╚════════════════════════════════════════╝
-    `);
-    });
+        `);
+        });
 
-    // Handle port already in use error
-    serverInstance.on('error', (error) => {
-        if (error.code === 'EADDRINUSE') {
-            console.error(`\n❌ Port ${PORT} is already in use!`);
-            console.log(`\n💡 Solutions:`);
-            console.log(`   1. Kill the process: taskkill /F /PID <PID>`);
-            console.log(`   2. Find PID: netstat -ano | findstr :${PORT}`);
-            console.log(`   3. Change PORT in .env file\n`);
-            process.exit(1);
-        } else {
-            console.error('Server error:', error);
-            process.exit(1);
-        }
-    });
-})();
+        // Handle port already in use error
+        serverInstance.on('error', (error) => {
+            if (error.code === 'EADDRINUSE') {
+                console.error(`\n❌ Port ${PORT} is already in use!`);
+                console.log(`\n💡 Solutions:`);
+                console.log(`   1. Kill the process: taskkill /F /PID <PID>`);
+                console.log(`   2. Find PID: netstat -ano | findstr :${PORT}`);
+                console.log(`   3. Change PORT in .env file\n`);
+                process.exit(1);
+            } else {
+                console.error('Server error:', error);
+                process.exit(1);
+            }
+        });
+    })();
+}
 
 module.exports = app;
