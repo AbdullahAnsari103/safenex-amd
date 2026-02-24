@@ -1,6 +1,5 @@
 {
   "hosting": {
-    "site": "safenex-s",
     "public": "public",
     "ignore": [
       "firebase.json",
