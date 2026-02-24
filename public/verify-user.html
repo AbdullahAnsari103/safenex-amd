@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeNex User Verification</title>
+    <link rel="stylesheet" href="verify-user.css">
+</head>
+<body>
+    <div class="verify-container">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Verifying SafeNex ID...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <div class="error-icon">⚠️</div>
+            <h2>Verification Failed</h2>
+            <p id="errorMessage">User not found or invalid QR code</p>
+            <button class="btn-retry" onclick="window.location.reload()">Try Again</button>
+        </div>
+
+        <!-- Success State -->
+        <div id="successState" class="success-state" style="display: none;">
+            <!-- Header -->
+            <div class="verify-header">
+                <div class="verify-logo">
+                    <div class="logo-shield">🛡️</div>
+                    <div class="logo-text">
+                        <h1>SafeNex</h1>
+                        <p>Verified User Profile</p>
+                    </div>
+                </div>
+                <div class="verified-badge">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span>VERIFIED</span>
+                </div>
+            </div>
+
+            <!-- User Card -->
+            <div class="user-card">
+                <!-- Profile Section -->
+                <div class="profile-section">
+                    <div class="profile-avatar" id="userAvatar">
+                        <span id="avatarInitial">U</span>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="userName">Loading...</h2>
+                        <div class="safenex-id-display">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            <span id="userSafeNexID">SNX-XXXXXX</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verification Status -->
+                <div class="verification-status">
+                    <div class="status-item verified">
+                        <div class="status-icon">✓</div>
+                        <div class="status-content">
+                            <div class="status-label">Identity Verified</div>
+                            <div class="status-value" id="verifiedDate">Jan 1, 2024</div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon">📄</div>
+                        <div class="status-content">
+                            <div class="status-label">Document Type</div>
+                            <div class="status-value" id="documentType">Aadhaar Card</div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-icon">🆔</div>
+                        <div class="status-content">
+                            <div class="status-label">Document Number</div>
+                            <div class="status-value" id="documentNumber">XXXX-XXXX-1234</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Details Grid -->
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Full Name</div>
+                        <div class="detail-value" id="fullName">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Verified Name</div>
+                        <div class="detail-value" id="extractedName">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Member Since</div>
+                        <div class="detail-value" id="memberSince">-</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Account Status</div>
+                        <div class="detail-value">
+                            <span class="status-badge active">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust Score -->
+                <div class="trust-score-section">
+                    <div class="trust-score-header">
+                        <h3>Trust Score</h3>
+                        <div class="trust-score-value" id="trustScore">95</div>
+                    </div>
+                    <div class="trust-score-bar">
+                        <div class="trust-score-fill" id="trustScoreFill" style="width: 95%"></div>
+                    </div>
+                    <div class="trust-score-indicators">
+                        <div class="trust-indicator">
+                            <span class="indicator-dot verified"></span>
+                            <span>Identity Verified</span>
+                        </div>
+                        <div class="trust-indicator">
+                            <span class="indicator-dot verified"></span>
+                            <span>Document Verified</span>
+                        </div>
+                        <div class="trust-indicator">
+                            <span class="indicator-dot verified"></span>
+                            <span>Active Member</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="security-notice">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <div class="security-notice-content">
+                        <strong>Privacy Protected</strong>
+                        <p>Only publicly verifiable information is displayed. Personal contact details are kept private.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="verify-footer">
+                <p>Verified by SafeNex Security System</p>
+                <p class="footer-timestamp" id="verificationTime">Verified at: -</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="verify-user.js"></script>
+</body>
+</html>

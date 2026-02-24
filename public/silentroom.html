@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#04091A">
+    <title>Silent Room — SafeNex Community</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="silentroom.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <!-- Top Nav -->
+    <nav class="nav">
+        <div class="nav__inner">
+            <a href="/dashboard" class="nav__brand">
+                <div class="nav__logo">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#nav-shield)"/>
+                        <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="nav-shield" x1="4" y1="2" x2="36" y2="41" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#2563EB"/><stop offset="1" stop-color="#06B6D4"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div>
+                    <span class="nav__name">SafeNex</span>
+                    <span class="nav__subtitle">SILENT ROOM</span>
+                </div>
+            </a>
+            <div class="nav__right">
+                <div class="user-menu__avatar" id="navAvatar">U</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="main">
+        <!-- Hero -->
+        <section class="sr-hero">
+            <div class="sr-hero__content">
+                <div class="system-status-badge">
+                    <span class="system-status-badge__dot"></span>
+                    COMMUNITY ONLINE
+                </div>
+                <h1 class="sr-hero__title">
+                    Silent Room
+                    <span class="gradient-text">Community Hub</span>
+                </h1>
+                <p class="sr-hero__sub">Share safety insights, connect with your community, and stay informed about local safety concerns.</p>
+            </div>
+        </section>
+
+        <!-- Feed Section -->
+        <section class="sr-feed-section">
+            <!-- Tab Navigation -->
+            <div class="sr-tabs">
+                <button class="sr-tab active" data-tab="feed">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Community Feed
+                </button>
+                <button class="sr-tab" data-tab="myposts">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    My Posts
+                </button>
+                <button class="sr-tab" data-tab="complaints">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Complaints
+                </button>
+                <button class="sr-tab" data-tab="analytics">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    Analytics
+                </button>
+            </div>
+
+            <!-- Feed Tab Content -->
+            <div class="sr-tab-content active" id="feedTab">
+                <!-- Filters and Trending -->
+                <div class="sr-controls">
+                    <div class="sr-filters">
+                        <button class="sr-filter-btn active" data-type="all">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            All Posts
+                        </button>
+                        <button class="sr-filter-btn" data-type="general">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            General
+                        </button>
+                        <button class="sr-filter-btn" data-type="theft">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            Theft Alert
+                        </button>
+                        <button class="sr-filter-btn" data-type="safety_alert">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            Safety
+                        </button>
+                        <button class="sr-filter-btn" data-type="lost_found">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Lost & Found
+                        </button>
+                        <button class="sr-filter-btn" data-type="suspicious">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            Suspicious
+                        </button>
+                    </div>
+
+                    <div class="sr-sort">
+                        <select id="sortSelect" class="sr-sort-select">
+                            <option value="recent">Recent</option>
+                            <option value="trending">Trending</option>
+                            <option value="popular">Most Liked</option>
+                            <option value="discussed">Most Discussed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Trending Posts -->
+                <div class="sr-trending" id="trendingSection" style="display:none;">
+                    <h3 class="sr-trending__title">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Trending This Week
+                    </h3>
+                    <div class="sr-trending__grid" id="trendingGrid">
+                        <!-- Trending posts loaded here -->
+                    </div>
+                </div>
+
+                <div class="sr-feed-header">
+                    <h2 class="section__title">COMMUNITY FEED</h2>
+                    <button class="btn-icon" id="createPostBtn" title="Create new post">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Feed Container -->
+                <div class="sr-feed" id="feedContainer">
+                    <!-- Posts loaded here -->
+                </div>
+
+                <!-- Loading -->
+                <div class="sr-loading" id="loadingIndicator" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Loading posts...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div class="sr-empty" id="emptyState" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    <h3>No posts yet</h3>
+                    <p>Be the first to share something with the community</p>
+                </div>
+            </div>
+
+            <!-- My Posts Tab Content -->
+            <div class="sr-tab-content" id="myPostsTab">
+                <div class="sr-feed-header">
+                    <h2 class="section__title">MY POSTS</h2>
+                    <button class="btn-icon" id="createPostBtn2" title="Create new post">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="sr-feed" id="myPostsContainer">
+                    <!-- User's posts loaded here -->
+                </div>
+                <div class="sr-loading" id="myPostsLoading" style="display:none;">
+                    <div class="spinner"></div>
+                    <p>Loading your posts...</p>
+                </div>
+                <div class="sr-empty" id="myPostsEmpty" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    <h3>No posts yet</h3>
+                    <p>Create your first post to get started</p>
+                </div>
+            </div>
+
+            <!-- Complaints Tab Content -->
+            <div class="sr-tab-content" id="complaintsTab">
+                <div class="sr-feed-header">
+                    <h2 class="section__title">SUBMIT COMPLAINT</h2>
+                    <button class="btn-icon" id="createComplaintBtn" title="Submit new complaint">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Complaint Info Banner -->
+                <div class="complaint-info-banner">
+                    <div class="complaint-info-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="complaint-info-content">
+                        <h3>Secure & Confidential Complaint System</h3>
+                        <p>Your complaints are securely stored and will be reviewed. Submit any safety concerns, harassment reports, or issues you want to raise.</p>
+                    </div>
+                </div>
+
+                <!-- My Complaints List -->
+                <div class="complaints-section">
+                    <h3 class="complaints-section-title">My Complaints</h3>
+                    <div class="sr-feed" id="complaintsContainer">
+                        <!-- User's complaints loaded here -->
+                    </div>
+                    <div class="sr-loading" id="complaintsLoading" style="display:none;">
+                        <div class="spinner"></div>
+                        <p>Loading your complaints...</p>
+                    </div>
+                    <div class="sr-empty" id="complaintsEmpty" style="display:none;">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <h3>No complaints submitted</h3>
+                        <p>Click the + button to submit your first complaint</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab Content -->
+            <div class="sr-tab-content" id="analyticsTab">
+                <div class="sr-feed-header">
+                    <h2 class="section__title">POST ANALYTICS</h2>
+                </div>
+                <div id="analyticsContainer">
+                    <!-- Analytics loaded here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Create Post Modal -->
+    <div class="modal-overlay" id="modalOverlay" hidden>
+        <div class="sr-modal" id="createModal">
+            <div class="sr-modal__header">
+                <div class="sr-modal__header-content">
+                    <div class="sr-modal__icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Create New Post</h2>
+                        <p class="sr-modal__subtitle">Share with your community</p>
+                    </div>
+                </div>
+                <button class="sr-modal__close" id="modalClose">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="sr-modal__body">
+                <!-- Post Type Selection -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M7 7h10M7 12h10M7 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Post Type
+                        <span class="sr-form-badge">Required</span>
+                    </label>
+                    <div class="sr-type-grid">
+                        <button class="sr-type-btn active" data-type="general">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">General</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-type="theft">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Theft Alert</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-type="safety_alert">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Safety Alert</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-type="lost_found">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Lost & Found</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-type="suspicious">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Suspicious</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-type="complaint">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Complaint</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-type="harassment">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Harassment</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Message -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Message
+                        <span class="sr-form-badge">Required</span>
+                    </label>
+                    <div class="sr-textarea-wrapper">
+                        <textarea id="postMessage" placeholder="Share your thoughts with the community..." maxlength="5000"></textarea>
+                        <div class="sr-char-count">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            <span id="charCount">0</span> / 5000
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Location
+                        <span class="sr-form-badge sr-form-badge--optional">Optional</span>
+                    </label>
+                    <button class="sr-location-btn" id="getLocationBtn">
+                        <div class="sr-location-btn__icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <span id="locationBtnText">Add Current Location</span>
+                        <div class="sr-location-btn__arrow">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </button>
+                    <div class="sr-location-display" id="locationDisplay" style="display:none;">
+                        <div class="sr-location-info">
+                            <div class="sr-location-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill="var(--cyan)" stroke="var(--cyan)" stroke-width="1.5"/>
+                                    <circle cx="12" cy="10" r="3" fill="var(--bg)" stroke="var(--bg)" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <div class="sr-location-text">
+                                <div class="sr-location-address" id="locationAddress">Fetching...</div>
+                                <div class="sr-location-coords" id="locationCoords"></div>
+                            </div>
+                        </div>
+                        <button class="sr-location-remove" id="removeLocationBtn">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Images -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                            <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Images
+                        <span class="sr-form-badge sr-form-badge--optional">Optional • Max 5</span>
+                    </label>
+                    <label class="sr-upload-btn" for="imageUpload">
+                        <div class="sr-upload-btn__icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                                <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="sr-upload-btn__text">
+                            <span class="sr-upload-btn__title">Click to upload images</span>
+                            <span class="sr-upload-btn__subtitle">PNG, JPG, GIF up to 5MB each</span>
+                        </div>
+                    </label>
+                    <input type="file" id="imageUpload" accept="image/*" multiple hidden>
+                    <div class="sr-image-grid" id="imagePreviewGrid"></div>
+                </div>
+
+                <!-- Anonymous Toggle -->
+                <div class="sr-form-group">
+                    <label class="sr-checkbox">
+                        <input type="checkbox" id="anonymousToggle">
+                        <span class="sr-checkbox__box">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="sr-checkbox__label">
+                            <span class="sr-checkbox__title">Post anonymously</span>
+                            <span class="sr-checkbox__subtitle">Your name won't be visible to others</span>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Private Complaint Toggle -->
+                <div class="sr-form-group" id="privateComplaintGroup" style="display:none;">
+                    <label class="sr-checkbox sr-checkbox--private">
+                        <input type="checkbox" id="privateComplaintToggle">
+                        <span class="sr-checkbox__box">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="sr-checkbox__label">
+                            <span class="sr-checkbox__title">
+                                🔒 Private Complaint (Admin Only)
+                            </span>
+                            <span class="sr-checkbox__subtitle">Only you and admin can see this complaint. It won't appear in the public feed.</span>
+                        </span>
+                    </label>
+                    <div class="sr-private-info">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p>Private complaints are sent directly to admin for review. You'll receive a response in your feed.</p>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button class="sr-submit-btn" id="submitBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Post to Community</span>
+                    <div class="sr-submit-btn__shine"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Comments Modal -->
+    <div class="modal-overlay" id="commentsModal" hidden>
+        <div class="sr-comments-modal">
+            <div class="sr-modal__header">
+                <h2>Comments</h2>
+                <button class="sr-modal__close" id="commentsClose">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="sr-comments-body">
+                <!-- Post Preview -->
+                <div class="sr-comments-post" id="commentsPostPreview"></div>
+                
+                <!-- Comments List -->
+                <div class="sr-comments-list" id="commentsList">
+                    <!-- Comments loaded here -->
+                </div>
+
+                <!-- Add Comment -->
+                <div class="sr-comments-add">
+                    <textarea id="commentInput" placeholder="Write a comment..." maxlength="1000"></textarea>
+                    <button class="sr-comment-submit" id="submitComment">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Post Comment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complaint Modal -->
+    <div class="modal-overlay" id="complaintModal" hidden>
+        <div class="sr-modal" id="complaintModalContent">
+            <div class="sr-modal__header">
+                <div class="sr-modal__header-content">
+                    <div class="sr-modal__icon complaint-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2>Submit Complaint</h2>
+                        <p class="sr-modal__subtitle">Securely report your concerns</p>
+                    </div>
+                </div>
+                <button class="sr-modal__close" id="complaintModalClose">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="sr-modal__body">
+                <!-- Complaint Type Selection -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M7 7h10M7 12h10M7 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Complaint Type
+                        <span class="sr-form-badge">Required</span>
+                    </label>
+                    <div class="sr-type-grid">
+                        <button class="sr-type-btn active" data-complaint-type="harassment">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Harassment</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-complaint-type="safety">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Safety Concern</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-complaint-type="discrimination">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5"/>
+                                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Discrimination</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        <button class="sr-type-btn" data-complaint-type="other">
+                            <div class="sr-type-btn__icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <span class="sr-type-btn__label">Other</span>
+                            <div class="sr-type-btn__check">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Complaint Message -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Describe Your Complaint
+                        <span class="sr-form-badge">Required</span>
+                    </label>
+                    <div class="sr-textarea-wrapper">
+                        <textarea id="complaintMessage" placeholder="Please describe your complaint in detail..." maxlength="5000"></textarea>
+                        <div class="sr-char-count">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            <span id="complaintCharCount">0</span> / 5000
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Location
+                        <span class="sr-form-badge sr-form-badge--optional">Optional</span>
+                    </label>
+                    <button class="sr-location-btn" id="getComplaintLocationBtn">
+                        <div class="sr-location-btn__icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <span id="complaintLocationBtnText">Add Location</span>
+                        <div class="sr-location-btn__arrow">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </button>
+                    <div class="sr-location-display" id="complaintLocationDisplay" style="display:none;">
+                        <div class="sr-location-info">
+                            <div class="sr-location-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" fill="var(--cyan)" stroke="var(--cyan)" stroke-width="1.5"/>
+                                    <circle cx="12" cy="10" r="3" fill="var(--bg)" stroke="var(--bg)" stroke-width="1.5"/>
+                                </svg>
+                            </div>
+                            <div class="sr-location-text">
+                                <div class="sr-location-address" id="complaintLocationAddress">Fetching...</div>
+                                <div class="sr-location-coords" id="complaintLocationCoords"></div>
+                            </div>
+                        </div>
+                        <button class="sr-location-remove" id="removeComplaintLocationBtn">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Images -->
+                <div class="sr-form-group">
+                    <label class="sr-form-label">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                            <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Evidence / Images
+                        <span class="sr-form-badge sr-form-badge--optional">Optional • Max 5</span>
+                    </label>
+                    <label class="sr-upload-btn" for="complaintImageUpload">
+                        <div class="sr-upload-btn__icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                                <path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="sr-upload-btn__text">
+                            <span class="sr-upload-btn__title">Upload supporting images</span>
+                            <span class="sr-upload-btn__subtitle">PNG, JPG, GIF up to 5MB each</span>
+                        </div>
+                    </label>
+                    <input type="file" id="complaintImageUpload" accept="image/*" multiple hidden>
+                    <div class="sr-image-grid" id="complaintImagePreviewGrid"></div>
+                </div>
+
+                <!-- Anonymous Toggle -->
+                <div class="sr-form-group">
+                    <label class="sr-checkbox">
+                        <input type="checkbox" id="complaintAnonymousToggle">
+                        <span class="sr-checkbox__box">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span class="sr-checkbox__label">
+                            <span class="sr-checkbox__title">Submit anonymously</span>
+                            <span class="sr-checkbox__subtitle">Your identity will remain confidential</span>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button class="sr-submit-btn complaint-submit-btn" id="submitComplaintBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Submit Complaint</span>
+                    <div class="sr-submit-btn__shine"></div>
+                </button>
+
+                <!-- Security Notice -->
+                <div class="complaint-security-notice">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <p>Your complaint is securely stored and encrypted. All submissions are confidential.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="silentroom.js"></script>
+</body>
+</html>

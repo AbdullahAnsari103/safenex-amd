@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta name="theme-color" content="#0A0F1C" />
+    <title>Nexa AI — Emergency Assistant</title>
+    <link rel="stylesheet" href="sos-redesign.css?v=2.6" />
+</head>
+<body>
+    <!-- Main Container -->
+    <div class="nexa-container" id="nexaContainer">
+        <!-- Header -->
+        <header class="nexa-header">
+            <div class="nexa-brand">
+                <div class="nexa-logo">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" fill="currentColor"/>
+                        <path d="M12 8v4l3 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="nexa-brand-info">
+                    <h1>Nexa AI</h1>
+                    <div class="nexa-status">
+                        <span class="nexa-status-dot"></span>
+                        <span>Monitoring Active</span>
+                    </div>
+                </div>
+            </div>
+            <div class="nexa-header-actions">
+                <button class="nexa-btn-icon" id="settingsBtn" aria-label="Settings" title="Emergency Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="3" stroke-width="2"/>
+                        <path d="M12 1v6m0 6v6M23 12h-6m-6 0H5" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="nexa-status-bar" id="statusBar">
+            <div class="nexa-status-item">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <span>Protected</span>
+            </div>
+            <div class="nexa-status-item">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M12 1v4m0 14v4M23 12h-4m-14 0H1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>AI Active</span>
+            </div>
+            <div class="nexa-status-item" id="gpsStatus">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <span id="gpsStatusText">GPS Ready</span>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="nexa-chat" id="chatMessages">
+            <!-- Welcome Screen (shown initially) -->
+            <div class="nexa-welcome" id="welcomeScreen">
+                <div class="nexa-welcome-icon">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" fill="currentColor"/>
+                        <path d="M12 8v4l3 2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h2>Welcome to Nexa AI</h2>
+                <p>Your intelligent emergency assistant. I'm here to help you stay safe and respond quickly in emergencies.</p>
+                
+                <div class="nexa-welcome-stats">
+                    <div class="nexa-stat">
+                        <div class="nexa-stat-value">24/7</div>
+                        <div class="nexa-stat-label">Monitoring</div>
+                    </div>
+                    <div class="nexa-stat">
+                        <div class="nexa-stat-value">&lt;2s</div>
+                        <div class="nexa-stat-label">Response Time</div>
+                    </div>
+                    <div class="nexa-stat">
+                        <div class="nexa-stat-value">100%</div>
+                        <div class="nexa-stat-label">Secure</div>
+                    </div>
+                </div>
+
+                <div class="nexa-welcome-features">
+                    <div class="nexa-feature">
+                        <div class="nexa-feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M12 1v4m0 14v4M23 12h-4m-14 0H1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Smart Detection</h3>
+                        <p>Automatically detects emergency keywords like "help", "danger", "emergency"</p>
+                    </div>
+                    <div class="nexa-feature">
+                        <div class="nexa-feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <h3>Location Sharing</h3>
+                        <p>Shares your precise GPS location instantly with emergency contacts</p>
+                    </div>
+                    <div class="nexa-feature">
+                        <div class="nexa-feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Voice Support</h3>
+                        <p>Speak naturally using voice-to-text, no typing needed</p>
+                    </div>
+                </div>
+
+                <div class="nexa-welcome-keywords">
+                    <div class="nexa-keyword-label">Emergency Keywords:</div>
+                    <div class="nexa-keywords">
+                        <span class="nexa-keyword">help</span>
+                        <span class="nexa-keyword">emergency</span>
+                        <span class="nexa-keyword">danger</span>
+                        <span class="nexa-keyword">sos</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="nexa-input-area">
+            <div class="nexa-input-wrapper">
+                <div class="nexa-input-container" id="inputContainer">
+                    <textarea 
+                        class="nexa-input" 
+                        id="chatInput" 
+                        placeholder="Type your message or use voice..."
+                        rows="1"
+                    ></textarea>
+                    <button class="nexa-voice-btn" id="voiceBtn" aria-label="Voice input" title="Voice to Text">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <button class="nexa-send-btn" id="sendBtn" aria-label="Send message" title="Send Message">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="nexa-input-hint">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M12 16v-4m0-4h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>Type emergency keywords to activate instant alert</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Modal -->
+    <div class="nexa-config-modal" id="configModal" style="display: none;">
+        <div class="nexa-config-content">
+            <div class="nexa-config-header">
+                <h2>Emergency Settings</h2>
+                <button class="nexa-config-close" id="configClose" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="nexa-config-section">
+                <h3>Emergency Contacts</h3>
+                <p class="nexa-config-description">Add phone numbers with country code (e.g., +1 for USA)</p>
+                <div class="nexa-config-field">
+                    <label for="primaryContact">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        Primary Contact
+                    </label>
+                    <input 
+                        type="tel" 
+                        id="primaryContact" 
+                        placeholder="+1 (555) 123-4567"
+                    />
+                </div>
+                <div class="nexa-config-field">
+                    <label for="secondaryContact">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        Secondary Contact (Optional)
+                    </label>
+                    <input 
+                        type="tel" 
+                        id="secondaryContact" 
+                        placeholder="+1 (555) 987-6543"
+                    />
+                </div>
+            </div>
+
+            <div class="nexa-config-info">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <div>
+                    <strong>Your data is secure</strong>
+                    <p>All emergency contacts are encrypted and stored locally</p>
+                </div>
+            </div>
+
+            <div class="nexa-config-actions">
+                <button class="nexa-btn nexa-btn-secondary" id="configCancel">Cancel</button>
+                <button class="nexa-btn nexa-btn-primary" id="configSave">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="nexa-toast" id="toast"></div>
+
+    <script src="sos-redesign.js?v=2.6"></script>
+</body>
+</html>

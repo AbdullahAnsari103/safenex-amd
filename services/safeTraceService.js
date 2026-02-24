@@ -1,0 +1,880 @@
+/**
+ * SafeTrace Service - Production-Ready Risk-Aware Navigation
+ * 
+ * This service handles:
+ * - Route fetching from OpenRouteService API
+ * - Risk score calculation based on danger zones
+ * - Route comparison and optimization
+ * - Intelligent caching and performance optimization
+ */
+
+const axios = require('axios');
+const polyline = require('@mapbox/polyline');
+const { getDangerZonesAlongRoute, getVerifiedDangerZonesAlongRoute } = require('../store/db');
+
+const OPENROUTE_API_KEY = process.env.OPENROUTE_API_KEY;
+const OPENROUTE_BASE_URL = 'https://api.openrouteservice.org/v2';
+const GEOCODE_BASE_URL = 'https://api.openrouteservice.org/geocode';
+
+// Cache for geocoding results (1 hour TTL)
+const geocodeCache = new Map();
+const GEOCODE_CACHE_TTL = 60 * 60 * 1000;
+
+// Cache for routes (30 seconds TTL for testing, increase in production)
+const routeCache = new Map();
+const ROUTE_CACHE_TTL = 30 * 1000; // 30 seconds
+
+// Rate limiting
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 100; // 100ms between requests
+
+// Severity weights for risk calculation
+const SEVERITY_WEIGHTS = {
+    low: 1,
+    medium: 3,
+    high: 7,
+    critical: 15
+};
+
+// Category risk multipliers
+const CATEGORY_MULTIPLIERS = {
+    crime: 1.5,
+    accident: 1.2,
+    harassment: 1.4,
+    theft: 1.3,
+    assault: 1.8,
+    general: 1.0
+};
+
+/**
+ * Geocode an address to coordinates using Nominatim (OpenStreetMap) as fallback
+ */
+async function geocodeAddress(address) {
+    // Check cache
+    const cacheKey = address.toLowerCase().trim();
+    const cached = geocodeCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < GEOCODE_CACHE_TTL) {
+        return cached.data;
+    }
+
+    // Try OpenRouteService first
+    try {
+        const response = await axios.get(`${GEOCODE_BASE_URL}/search`, {
+            params: {
+                api_key: OPENROUTE_API_KEY,
+                text: address,
+                size: 1
+            },
+            headers: {
+                'Accept': 'application/json'
+            },
+            timeout: 10000
+        });
+
+        if (response.data.features && response.data.features.length > 0) {
+            const feature = response.data.features[0];
+            const result = {
+                latitude: feature.geometry.coordinates[1],
+                longitude: feature.geometry.coordinates[0],
+                address: feature.properties.label
+            };
+
+            // Cache result
+            geocodeCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+
+            return result;
+        }
+    } catch (error) {
+        console.warn('OpenRouteService geocoding failed, trying Nominatim fallback:', error.message);
+    }
+
+    // Fallback to Nominatim (OpenStreetMap) - has ALL locations worldwide
+    try {
+        const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+            params: {
+                q: address,
+                format: 'json',
+                limit: 1,
+                addressdetails: 1
+            },
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'SafeNex-SafeTrace/1.0' // Required by Nominatim
+            },
+            timeout: 10000
+        });
+
+        if (response.data && response.data.length > 0) {
+            const location = response.data[0];
+            const result = {
+                latitude: parseFloat(location.lat),
+                longitude: parseFloat(location.lon),
+                address: location.display_name
+            };
+
+            // Cache result
+            geocodeCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+
+            return result;
+        }
+
+        throw new Error('Address not found');
+    } catch (error) {
+        console.error('Geocoding error:', error.message);
+        
+        if (error.response?.status === 404) {
+            throw new Error('Address not found. Please try a different search term.');
+        } else if (error.response?.status === 429) {
+            throw new Error('Too many requests. Please try again in a moment.');
+        }
+        
+        throw new Error(`Failed to geocode address: ${error.message}`);
+    }
+}
+
+/**
+ * Reverse geocode coordinates to address
+ */
+async function reverseGeocode(latitude, longitude) {
+    const cacheKey = `${latitude.toFixed(5)},${longitude.toFixed(5)}`;
+    const cached = geocodeCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < GEOCODE_CACHE_TTL) {
+        return cached.data;
+    }
+
+    try {
+        const response = await axios.get(`${GEOCODE_BASE_URL}/reverse`, {
+            params: {
+                api_key: OPENROUTE_API_KEY,
+                'point.lon': longitude,
+                'point.lat': latitude,
+                size: 1
+            },
+            headers: {
+                'Accept': 'application/json'
+            },
+            timeout: 10000
+        });
+
+        if (response.data.features && response.data.features.length > 0) {
+            const address = response.data.features[0].properties.label;
+            
+            geocodeCache.set(cacheKey, {
+                data: address,
+                timestamp: Date.now()
+            });
+
+            return address;
+        }
+
+        return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    } catch (error) {
+        console.error('Reverse geocoding error:', error.message);
+        return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    }
+}
+
+/**
+ * Fetch multiple route alternatives from OpenRouteService
+ * @param {string} profile - Travel mode: 'foot-walking', 'cycling-regular', 'driving-car'
+ */
+async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-walking', alternatives = 3, avoidAreas = []) {
+    if (!OPENROUTE_API_KEY) {
+        throw new Error('OpenRouteService API key not configured');
+    }
+
+    // Check cache first - include travel mode in cache key
+    const cacheKey = `${startLat.toFixed(4)},${startLng.toFixed(4)}-${endLat.toFixed(4)},${endLng.toFixed(4)}-${profile}`;
+    const cached = routeCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < ROUTE_CACHE_TTL) {
+        console.log(`Returning cached routes for ${profile}`);
+        return cached.data;
+    }
+
+    // Rate limiting
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+        await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest));
+    }
+    lastRequestTime = Date.now();
+
+    // Check distance before making API call
+    const distance = calculateDistance(startLat, startLng, endLat, endLng);
+    const distanceKm = distance / 1000;
+    
+    // Distance limits vary by profile
+    const distanceLimits = {
+        'foot-walking': 150,
+        'cycling-regular': 300,
+        'driving-car': 6000
+    };
+    
+    const maxDistance = distanceLimits[profile] || 150;
+    
+    if (distanceKm > maxDistance) {
+        throw new Error(`Destination is too far (${distanceKm.toFixed(1)}km). ${profile} routes are limited to ${maxDistance}km.`);
+    }
+    
+    // Warn if distance is very long
+    if (distanceKm > 50 && profile === 'foot-walking') {
+        console.warn(`Long distance walking route requested: ${distanceKm.toFixed(1)}km`);
+    }
+
+    // Build request body with proper alternative routes configuration
+    const requestBody = {
+        coordinates: [
+            [startLng, startLat],
+            [endLng, endLat]
+        ],
+        alternative_routes: {
+            target_count: alternatives,
+            weight_factor: 1.4,
+            share_factor: 0.6
+        },
+        elevation: false,
+        instructions: true,
+        preference: 'recommended',
+        geometry_simplify: false,
+        continue_straight: false
+    };
+
+    // Add avoidance areas if provided (for danger zones)
+    if (avoidAreas && avoidAreas.length > 0) {
+        requestBody.options = {
+            avoid_polygons: {
+                type: 'Polygon',
+                coordinates: avoidAreas
+            }
+        };
+        console.log(`Avoiding ${avoidAreas.length} danger zone areas`);
+    }
+
+    const endpoint = `${OPENROUTE_BASE_URL}/directions/${profile}`;
+
+    try {
+        const response = await axios.post(
+            endpoint,
+            requestBody,
+            {
+                headers: {
+                    'Authorization': OPENROUTE_API_KEY,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                },
+                timeout: 20000
+            }
+        );
+
+        if (!response.data.routes || response.data.routes.length === 0) {
+            throw new Error('No routes found');
+        }
+
+        console.log('OpenRouteService response structure:', {
+            hasRoutes: !!response.data.routes,
+            routeCount: response.data.routes?.length,
+            firstRouteKeys: response.data.routes?.[0] ? Object.keys(response.data.routes[0]) : [],
+            profile: profile
+        });
+
+        const routes = response.data.routes.map((route, index) => {
+            console.log(`Processing route ${index} for ${profile}:`, {
+                hasGeometry: !!route.geometry,
+                geometryType: typeof route.geometry,
+                hasSummary: !!route.summary,
+                hasSegments: !!route.segments,
+                distance: route.summary?.distance,
+                duration: route.summary?.duration
+            });
+
+            // OpenRouteService returns geometry as encoded polyline string by default
+            let coordinates;
+            
+            if (route.geometry) {
+                // Check if it's an encoded polyline string
+                if (typeof route.geometry === 'string') {
+                    console.log(`Route ${index}: Decoding polyline geometry`);
+                    try {
+                        // Decode the polyline - returns [[lat, lng], [lat, lng], ...]
+                        const decoded = polyline.decode(route.geometry);
+                        // Convert to [lng, lat] format for consistency
+                        coordinates = decoded.map(coord => [coord[1], coord[0]]);
+                        console.log(`Route ${index}: Decoded ${coordinates.length} coordinates`);
+                    } catch (decodeError) {
+                        console.error('Failed to decode polyline:', decodeError);
+                        throw new Error('Failed to decode route geometry');
+                    }
+                } 
+                // Check if it's GeoJSON format with coordinates array
+                else if (typeof route.geometry === 'object' && route.geometry.coordinates) {
+                    coordinates = route.geometry.coordinates;
+                    console.log(`Route ${index}: Using GeoJSON coordinates (${coordinates.length} points)`);
+                } 
+                // Unknown format
+                else {
+                    console.error('Unknown geometry format:', route.geometry);
+                    throw new Error('Unknown geometry format in route response');
+                }
+            } else {
+                console.error('No geometry found in route');
+                throw new Error('Route has no geometry data');
+            }
+
+            if (!coordinates || coordinates.length === 0) {
+                throw new Error('Route has empty coordinates array');
+            }
+
+            const processedRoute = {
+                id: `route_${index}`,
+                coordinates: coordinates,
+                distance: route.summary.distance, // meters
+                duration: route.summary.duration, // seconds
+                instructions: route.segments?.[0]?.steps?.map(step => ({
+                    instruction: step.instruction,
+                    distance: step.distance,
+                    duration: step.duration,
+                    type: step.type
+                })) || []
+            };
+
+            console.log(`Route ${index} processed:`, {
+                distance: processedRoute.distance,
+                duration: processedRoute.duration,
+                durationMin: Math.round(processedRoute.duration / 60)
+            });
+
+            return processedRoute;
+        });
+
+        // Cache the results
+        routeCache.set(cacheKey, {
+            data: routes,
+            timestamp: Date.now()
+        });
+
+        return routes;
+    } catch (error) {
+        console.error('Route fetching error:', error.response?.data || error.message);
+        
+        if (error.response?.status === 401) {
+            throw new Error('Invalid API key configuration');
+        } else if (error.response?.status === 429) {
+            throw new Error('API rate limit exceeded. Please try again later.');
+        } else if (error.response?.status === 404) {
+            const errorMsg = error.response?.data?.error?.message || '';
+            if (errorMsg.includes('Route could not be found')) {
+                throw new Error('No route found between these locations. The area may not have road data, or the points are not accessible by the selected travel mode. Try different locations or travel mode.');
+            }
+            throw new Error('Route not found. Please try different locations.');
+        } else if (error.response?.status === 400) {
+            const errorMsg = error.response?.data?.error?.message || '';
+            if (errorMsg.includes('distance must not be greater than')) {
+                throw new Error('Destination is too far for walking routes. Please choose a closer location (within 150km).');
+            }
+            throw new Error('Invalid route request. Please check your start and end locations.');
+        }
+        
+        throw new Error(`Failed to fetch routes: ${error.message}`);
+    }
+}
+
+/**
+ * Calculate distance between two points using Haversine formula
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Earth radius in meters
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+}
+
+/**
+ * Calculate risk score for a route based on danger zones
+ */
+function calculateRouteRisk(route, dangerZones) {
+    if (!dangerZones || dangerZones.length === 0) {
+        return {
+            totalRisk: 0,
+            riskLevel: 'safe',
+            affectedZones: [],
+            riskFactors: []
+        };
+    }
+
+    let totalRisk = 0;
+    const affectedZones = [];
+    const riskFactors = [];
+
+    // Check each point on the route against danger zones
+    for (const coord of route.coordinates) {
+        const [lng, lat] = coord;
+
+        for (const zone of dangerZones) {
+            const distance = calculateDistance(lat, lng, zone.latitude, zone.longitude);
+
+            // Check if route point is within danger zone radius
+            if (distance <= zone.radius) {
+                const baseWeight = SEVERITY_WEIGHTS[zone.severity] || 1;
+                const categoryMultiplier = CATEGORY_MULTIPLIERS[zone.category] || 1;
+                
+                // Calculate decay based on age (older reports have less weight)
+                const ageInDays = (Date.now() - new Date(zone.lastReported).getTime()) / (1000 * 60 * 60 * 24);
+                const decayFactor = Math.max(0.3, 1 - (ageInDays / 90)); // Decay over 90 days, minimum 30%
+                
+                // Calculate recency boost (recent reports get more weight)
+                const recencyBoost = ageInDays < 7 ? 1.5 : ageInDays < 30 ? 1.2 : 1.0;
+                
+                // Calculate report count boost (multiple reports increase weight)
+                const reportBoost = Math.min(2.0, 1 + (zone.reportCount - 1) * 0.1);
+                
+                // Calculate proximity factor (closer = higher risk)
+                const proximityFactor = 1 - (distance / zone.radius);
+                
+                const riskContribution = baseWeight * categoryMultiplier * decayFactor * 
+                                       recencyBoost * reportBoost * proximityFactor;
+
+                totalRisk += riskContribution;
+
+                // Track unique affected zones
+                if (!affectedZones.find(z => z.id === zone.id)) {
+                    affectedZones.push({
+                        id: zone.id,
+                        severity: zone.severity,
+                        category: zone.category,
+                        description: zone.description,
+                        distance: Math.round(distance),
+                        reportCount: zone.reportCount,
+                        lastReported: zone.lastReported
+                    });
+                }
+            }
+        }
+    }
+
+    // Normalize risk score (0-100 scale)
+    const normalizedRisk = Math.min(100, Math.round(totalRisk));
+
+    // Determine risk level
+    let riskLevel;
+    if (normalizedRisk === 0) riskLevel = 'safe';
+    else if (normalizedRisk < 20) riskLevel = 'low';
+    else if (normalizedRisk < 50) riskLevel = 'medium';
+    else if (normalizedRisk < 80) riskLevel = 'high';
+    else riskLevel = 'critical';
+
+    // Generate risk factors explanation
+    if (affectedZones.length > 0) {
+        const severityCounts = affectedZones.reduce((acc, zone) => {
+            acc[zone.severity] = (acc[zone.severity] || 0) + 1;
+            return acc;
+        }, {});
+
+        for (const [severity, count] of Object.entries(severityCounts)) {
+            riskFactors.push(`${count} ${severity} risk zone${count > 1 ? 's' : ''}`);
+        }
+
+        const recentZones = affectedZones.filter(z => {
+            const ageInDays = (Date.now() - new Date(z.lastReported).getTime()) / (1000 * 60 * 60 * 24);
+            return ageInDays < 7;
+        });
+
+        if (recentZones.length > 0) {
+            riskFactors.push(`${recentZones.length} recent report${recentZones.length > 1 ? 's' : ''} (last 7 days)`);
+        }
+    }
+
+    return {
+        totalRisk: normalizedRisk,
+        riskLevel,
+        affectedZones: affectedZones.slice(0, 5), // Top 5 zones
+        riskFactors
+    };
+}
+
+/**
+ * Enhanced risk calculation with verified danger zones and time-based penalties
+ */
+function calculateRouteRiskWithVerifiedZones(route, userDangerZones, verifiedDangerZones) {
+    let totalRisk = 0;
+    const affectedZones = [];
+    const riskFactors = [];
+    const currentHour = new Date().getHours();
+
+    // Process user-reported danger zones (existing logic)
+    for (const coord of route.coordinates) {
+        const [lng, lat] = coord;
+
+        // Check user-reported zones
+        for (const zone of userDangerZones) {
+            const distance = calculateDistance(lat, lng, zone.latitude, zone.longitude);
+
+            if (distance <= zone.radius) {
+                const baseWeight = SEVERITY_WEIGHTS[zone.severity] || 1;
+                const categoryMultiplier = CATEGORY_MULTIPLIERS[zone.category] || 1;
+                
+                const ageInDays = (Date.now() - new Date(zone.lastReported).getTime()) / (1000 * 60 * 60 * 24);
+                const decayFactor = Math.max(0.3, 1 - (ageInDays / 90));
+                const recencyBoost = ageInDays < 7 ? 1.5 : ageInDays < 30 ? 1.2 : 1.0;
+                const reportBoost = Math.min(2.0, 1 + (zone.reportCount - 1) * 0.1);
+                const proximityFactor = 1 - (distance / zone.radius);
+                
+                const riskContribution = baseWeight * categoryMultiplier * decayFactor * 
+                                       recencyBoost * reportBoost * proximityFactor;
+
+                totalRisk += riskContribution;
+
+                if (!affectedZones.find(z => z.id === zone.id)) {
+                    affectedZones.push({
+                        id: zone.id,
+                        severity: zone.severity,
+                        category: zone.category,
+                        description: zone.description,
+                        distance: Math.round(distance),
+                        reportCount: zone.reportCount,
+                        lastReported: zone.lastReported,
+                        type: 'user-reported'
+                    });
+                }
+            }
+        }
+
+        // Check verified danger zones with enhanced penalties
+        for (const zone of verifiedDangerZones) {
+            const distance = calculateDistance(lat, lng, zone.latitude, zone.longitude);
+
+            if (distance <= zone.radius) {
+                // Base severity weight from database (already calibrated)
+                const baseWeight = zone.severityWeight;
+                
+                // Check if current time falls within active hours
+                const isActiveNow = isWithinActiveHours(currentHour, zone.activeHours);
+                const activeHoursMultiplier = isActiveNow ? 1.8 : 1.0; // 80% penalty increase during active hours
+                
+                // Proximity factor (geofence-based)
+                const proximityFactor = 1 - (distance / zone.radius);
+                
+                // Verified zones get a credibility boost
+                const verificationBoost = 1.5;
+                
+                // Calculate final risk contribution
+                const riskContribution = baseWeight * activeHoursMultiplier * proximityFactor * verificationBoost * 10;
+
+                totalRisk += riskContribution;
+
+                if (!affectedZones.find(z => z.id === `verified-${zone.id}`)) {
+                    affectedZones.push({
+                        id: `verified-${zone.id}`,
+                        severity: zone.riskLevel.toLowerCase(),
+                        category: zone.category,
+                        description: zone.description || zone.placeName,
+                        placeName: zone.placeName,
+                        distance: Math.round(distance),
+                        activeHours: zone.activeHours,
+                        isActiveNow: isActiveNow,
+                        source: zone.source,
+                        type: 'verified'
+                    });
+                }
+            }
+        }
+    }
+
+    // Normalize risk score (0-100 scale)
+    const normalizedRisk = Math.min(100, Math.round(totalRisk));
+
+    // Determine risk level
+    let riskLevel;
+    if (normalizedRisk === 0) riskLevel = 'safe';
+    else if (normalizedRisk < 20) riskLevel = 'low';
+    else if (normalizedRisk < 50) riskLevel = 'medium';
+    else if (normalizedRisk < 80) riskLevel = 'high';
+    else riskLevel = 'critical';
+
+    // Generate risk factors explanation
+    if (affectedZones.length > 0) {
+        const verifiedCount = affectedZones.filter(z => z.type === 'verified').length;
+        const userCount = affectedZones.filter(z => z.type === 'user-reported').length;
+        
+        if (verifiedCount > 0) {
+            riskFactors.push(`${verifiedCount} verified danger zone${verifiedCount > 1 ? 's' : ''}`);
+        }
+        
+        if (userCount > 0) {
+            riskFactors.push(`${userCount} user-reported zone${userCount > 1 ? 's' : ''}`);
+        }
+
+        const activeNow = affectedZones.filter(z => z.isActiveNow);
+        if (activeNow.length > 0) {
+            riskFactors.push(`${activeNow.length} zone${activeNow.length > 1 ? 's' : ''} active now`);
+        }
+
+        const criticalZones = affectedZones.filter(z => z.severity === 'critical');
+        if (criticalZones.length > 0) {
+            riskFactors.push(`${criticalZones.length} critical risk zone${criticalZones.length > 1 ? 's' : ''}`);
+        }
+    }
+
+    return {
+        totalRisk: normalizedRisk,
+        riskLevel,
+        affectedZones: affectedZones.slice(0, 10), // Top 10 zones
+        riskFactors
+    };
+}
+
+/**
+ * Check if current hour falls within active hours range
+ * @param {number} currentHour - Current hour (0-23)
+ * @param {string} activeHours - Format: "HH:MM-HH:MM" or "HH:MM-HH:MM,HH:MM-HH:MM"
+ */
+function isWithinActiveHours(currentHour, activeHours) {
+    if (!activeHours || activeHours === '00:00-23:59') {
+        return true; // Always active
+    }
+
+    const ranges = activeHours.split(',');
+    
+    for (const range of ranges) {
+        const [start, end] = range.trim().split('-');
+        const [startHour] = start.split(':').map(Number);
+        const [endHour] = end.split(':').map(Number);
+
+        // Handle overnight ranges (e.g., 21:00-06:00)
+        if (startHour > endHour) {
+            if (currentHour >= startHour || currentHour < endHour) {
+                return true;
+            }
+        } else {
+            if (currentHour >= startHour && currentHour < endHour) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Get optimized routes with risk analysis
+ * @param {string} profile - Travel mode: 'foot-walking', 'cycling-regular', 'driving-car'
+ */
+async function getOptimizedRoutes(startLat, startLng, endLat, endLng, profile = 'foot-walking') {
+    // First, get critical danger zones to avoid
+    const boundingBox = [
+        [startLng, startLat],
+        [endLng, endLat]
+    ];
+    
+    // Fetch verified danger zones in the area
+    const verifiedZonesPreview = await getVerifiedDangerZonesAlongRoute(boundingBox, 2.0);
+    
+    // Create avoidance polygons for critical zones only
+    const avoidAreas = verifiedZonesPreview
+        .filter(zone => zone.riskLevel === 'Critical' || zone.riskLevel === 'High')
+        .map(zone => {
+            // Create a square polygon around the danger zone
+            const radiusInDegrees = zone.radius / 111320; // Convert meters to degrees (approximate)
+            return [
+                [zone.longitude - radiusInDegrees, zone.latitude - radiusInDegrees],
+                [zone.longitude + radiusInDegrees, zone.latitude - radiusInDegrees],
+                [zone.longitude + radiusInDegrees, zone.latitude + radiusInDegrees],
+                [zone.longitude - radiusInDegrees, zone.latitude + radiusInDegrees],
+                [zone.longitude - radiusInDegrees, zone.latitude - radiusInDegrees] // Close the polygon
+            ];
+        })
+        .slice(0, 20); // Limit to 20 avoidance areas to prevent API overload
+
+    console.log(`Found ${verifiedZonesPreview.length} verified zones, avoiding ${avoidAreas.length} critical/high risk areas`);
+
+    // Fetch multiple route alternatives with avoidance
+    const routes = await fetchRoutes(startLat, startLng, endLat, endLng, profile, 3, avoidAreas);
+
+    // Validate routes
+    if (!routes || routes.length === 0) {
+        throw new Error('No routes found');
+    }
+
+    // Get danger zones along all routes
+    const allCoordinates = routes
+        .filter(r => r && r.coordinates && Array.isArray(r.coordinates))
+        .flatMap(r => r.coordinates);
+    
+    console.log('Total coordinates for danger zone check:', allCoordinates.length);
+    
+    // Fetch both user-reported and verified danger zones
+    const [userDangerZones, verifiedDangerZones] = await Promise.all([
+        getDangerZonesAlongRoute(allCoordinates, 0.5),
+        getVerifiedDangerZonesAlongRoute(allCoordinates, 0.5)
+    ]);
+
+    console.log(`Found ${userDangerZones.length} user-reported zones and ${verifiedDangerZones.length} verified zones`);
+
+    // Calculate risk for each route with both zone types
+    const analyzedRoutes = routes.map(route => {
+        const riskAnalysis = calculateRouteRiskWithVerifiedZones(route, userDangerZones, verifiedDangerZones);
+        
+        // Format duration based on travel mode
+        let durationMin = Math.round(route.duration / 60);
+        let durationDisplay = durationMin;
+        
+        // For longer durations, show hours
+        if (durationMin >= 60) {
+            const hours = Math.floor(durationMin / 60);
+            const mins = durationMin % 60;
+            durationDisplay = `${hours}h ${mins}m`;
+        } else {
+            durationDisplay = `${durationMin} min`;
+        }
+        
+        return {
+            ...route,
+            risk: riskAnalysis,
+            distanceKm: (route.distance / 1000).toFixed(2),
+            durationMin: durationMin,
+            durationDisplay: durationDisplay,
+            dangerZoneCount: riskAnalysis.affectedZones.length,
+            travelMode: profile
+        };
+    });
+
+    // Sort by multiple criteria for best recommendation:
+    // 1. Fewest danger zones (primary)
+    // 2. Lowest risk score (secondary)
+    // 3. Shortest distance (tertiary)
+    analyzedRoutes.sort((a, b) => {
+        // First priority: fewer danger zones
+        if (a.dangerZoneCount !== b.dangerZoneCount) {
+            return a.dangerZoneCount - b.dangerZoneCount;
+        }
+        // Second priority: lower risk score
+        if (a.risk.totalRisk !== b.risk.totalRisk) {
+            return a.risk.totalRisk - b.risk.totalRisk;
+        }
+        // Third priority: shorter distance
+        return a.distance - b.distance;
+    });
+
+    // Mark the safest route (fewest danger zones + lowest risk)
+    if (analyzedRoutes.length > 0) {
+        analyzedRoutes[0].recommended = true;
+    }
+
+    // Combine all danger zones for map display
+    const allDangerZones = [
+        ...userDangerZones.map(zone => ({
+            id: zone.id,
+            latitude: zone.latitude,
+            longitude: zone.longitude,
+            radius: zone.radius,
+            severity: zone.severity,
+            category: zone.category,
+            description: zone.description,
+            reportCount: zone.reportCount,
+            lastReported: zone.lastReported,
+            type: 'user-reported'
+        })),
+        ...verifiedDangerZones.map(zone => ({
+            id: `verified-${zone.id}`,
+            latitude: zone.latitude,
+            longitude: zone.longitude,
+            radius: zone.radius,
+            severity: zone.riskLevel.toLowerCase(),
+            category: zone.category,
+            description: zone.description || zone.placeName,
+            placeName: zone.placeName,
+            activeHours: zone.activeHours,
+            severityWeight: zone.severityWeight,
+            source: zone.source,
+            type: 'verified'
+        }))
+    ];
+
+    return {
+        routes: analyzedRoutes,
+        dangerZones: allDangerZones,
+        metadata: {
+            totalRoutes: analyzedRoutes.length,
+            totalDangerZones: allDangerZones.length,
+            userReportedZones: userDangerZones.length,
+            verifiedZones: verifiedDangerZones.length,
+            safestRoute: analyzedRoutes[0]?.id,
+            avoidedAreas: avoidAreas.length,
+            travelMode: profile,
+            timestamp: new Date().toISOString()
+        }
+    };
+}
+
+/**
+ * Check if user has deviated from route
+ */
+function hasDeviatedFromRoute(currentLat, currentLng, routeCoordinates, thresholdMeters = 50) {
+    let minDistance = Infinity;
+
+    for (const coord of routeCoordinates) {
+        const [lng, lat] = coord;
+        const distance = calculateDistance(currentLat, currentLng, lat, lng);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+        }
+
+        // Early exit if within threshold
+        if (minDistance <= thresholdMeters) {
+            return false;
+        }
+    }
+
+    return minDistance > thresholdMeters;
+}
+
+/**
+ * Get remaining route from current position
+ */
+function getRemainingRoute(currentLat, currentLng, routeCoordinates) {
+    let closestIndex = 0;
+    let minDistance = Infinity;
+
+    // Find closest point on route
+    for (let i = 0; i < routeCoordinates.length; i++) {
+        const [lng, lat] = routeCoordinates[i];
+        const distance = calculateDistance(currentLat, currentLng, lat, lng);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+        }
+    }
+
+    // Return remaining coordinates from closest point
+    return routeCoordinates.slice(closestIndex);
+}
+
+module.exports = {
+    geocodeAddress,
+    reverseGeocode,
+    fetchRoutes,
+    getOptimizedRoutes,
+    calculateRouteRisk,
+    calculateRouteRiskWithVerifiedZones,
+    hasDeviatedFromRoute,
+    getRemainingRoute,
+    calculateDistance
+};

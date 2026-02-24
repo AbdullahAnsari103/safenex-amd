@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#04091A">
+    <title>SafeNex - Your Digital Safety Companion</title>
+    <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-content">
+                <a href="/" class="logo">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#gradient)"/>
+                        <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="4" y1="2" x2="36" y2="41">
+                                <stop stop-color="#2563EB"/><stop offset="1" stop-color="#06B6D4"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    SafeNex
+                </a>
+                <a href="/onboarding.html" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+            <div class="grid-overlay"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge" data-animate>
+                    <span class="dot"></span>
+                    Your Safety, Our Priority
+                </div>
+                <h1 class="hero-title" data-animate>
+                    Stay Safe<br/>
+                    <span class="gradient-text">Everywhere You Go</span>
+                </h1>
+                <p class="hero-subtitle" data-animate>
+                    Emergency alerts, AI-powered safe routes, verified identity, and community safety—all in one platform.
+                </p>
+                <div class="hero-buttons" data-animate>
+                    <a href="/onboarding.html" class="btn-primary btn-large">
+                        <span>Start Free Now</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </a>
+                    <a href="#features" class="btn-secondary btn-large">
+                        <span>Learn More</span>
+                    </a>
+                </div>
+                <div class="stats" data-animate>
+                    <div class="stat">
+                        <div class="stat-value" data-count="10000">0</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <div class="stat-value" data-count="50000">0</div>
+                        <div class="stat-label">Verified IDs</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <div class="stat-value" data-count="1000">0</div>
+                        <div class="stat-label">Lives Protected</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator" data-animate>
+            <div class="scroll-icon">
+                <div class="scroll-dot"></div>
+            </div>
+            <span>Scroll to explore</span>
+        </div>
+    </section>
+
+    <!-- Device Preview -->
+    <section class="device-preview">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge" data-animate>Cross-Platform</div>
+                <h2 data-animate>Works on All Your Devices</h2>
+                <p data-animate>Seamless experience across mobile, tablet, and desktop with real-time sync</p>
+            </div>
+            <div class="devices-showcase">
+                <div class="laptop-mockup" data-animate>
+                    <div class="laptop-screen">
+                        <div class="browser-chrome">
+                            <div class="browser-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <div class="browser-address">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>safenex.app</span>
+                            </div>
+                            <div class="browser-actions">
+                                <div class="action-dot"></div>
+                                <div class="action-dot"></div>
+                            </div>
+                        </div>
+                        <div class="dashboard-content">
+                            <div class="dashboard-sidebar">
+                                <div class="sidebar-logo">
+                                    <div class="logo-icon"></div>
+                                    <span>SafeNex</span>
+                                </div>
+                                <div class="sidebar-nav">
+                                    <div class="nav-item active">
+                                        <div class="nav-icon blue"></div>
+                                        <span>Dashboard</span>
+                                    </div>
+                                    <div class="nav-item">
+                                        <div class="nav-icon red"></div>
+                                        <span>Emergency</span>
+                                    </div>
+                                    <div class="nav-item">
+                                        <div class="nav-icon purple"></div>
+                                        <span>SafeTrace</span>
+                                    </div>
+                                    <div class="nav-item">
+                                        <div class="nav-icon cyan"></div>
+                                        <span>Community</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dashboard-main">
+                                <div class="dashboard-header">
+                                    <div class="header-title">
+                                        <h4>Safety Dashboard</h4>
+                                        <span class="status-badge">Protected</span>
+                                    </div>
+                                </div>
+                                <div class="dashboard-grid">
+                                    <div class="dash-card">
+                                        <div class="card-icon blue"></div>
+                                        <div class="card-content">
+                                            <span>Verified ID</span>
+                                            <strong>Active</strong>
+                                        </div>
+                                    </div>
+                                    <div class="dash-card">
+                                        <div class="card-icon red"></div>
+                                        <div class="card-content">
+                                            <span>SOS Ready</span>
+                                            <strong>Enabled</strong>
+                                        </div>
+                                    </div>
+                                    <div class="dash-card">
+                                        <div class="card-icon purple"></div>
+                                        <div class="card-content">
+                                            <span>Safe Routes</span>
+                                            <strong>12 Saved</strong>
+                                        </div>
+                                    </div>
+                                    <div class="dash-card">
+                                        <div class="card-icon cyan"></div>
+                                        <div class="card-content">
+                                            <span>Community</span>
+                                            <strong>24 Alerts</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="laptop-base">
+                        <div class="laptop-notch"></div>
+                    </div>
+                    <div class="laptop-shadow"></div>
+                </div>
+
+                <div class="mobile-mockups" data-animate>
+                    <div class="phone-mockup">
+                        <div class="phone-frame">
+                            <div class="phone-notch"></div>
+                            <div class="phone-screen">
+                                <div class="phone-statusbar">
+                                    <span>9:41</span>
+                                    <div class="status-icons">
+                                        <div class="signal-icon"></div>
+                                        <div class="battery-icon"></div>
+                                    </div>
+                                </div>
+                                <div class="phone-content sos-screen">
+                                    <div class="app-header">
+                                        <h3>Emergency SOS</h3>
+                                        <span class="header-badge">Ready</span>
+                                    </div>
+                                    <div class="sos-button-wrapper">
+                                        <div class="sos-ripple"></div>
+                                        <div class="sos-ripple delay-1"></div>
+                                        <div class="sos-ripple delay-2"></div>
+                                        <button class="sos-button">
+                                            <svg viewBox="0 0 24 24" fill="none">
+                                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="sos-info">
+                                        <p>Tap to send emergency alert</p>
+                                        <span>3 contacts will be notified</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="phone-mockup">
+                        <div class="phone-frame">
+                            <div class="phone-notch"></div>
+                            <div class="phone-screen">
+                                <div class="phone-statusbar">
+                                    <span>9:41</span>
+                                    <div class="status-icons">
+                                        <div class="signal-icon"></div>
+                                        <div class="battery-icon"></div>
+                                    </div>
+                                </div>
+                                <div class="phone-content route-screen">
+                                    <div class="app-header">
+                                        <h3>SafeTrace</h3>
+                                        <span class="header-badge purple">Active</span>
+                                    </div>
+                                    <div class="map-container">
+                                        <div class="map-grid"></div>
+                                        <div class="route-path">
+                                            <div class="route-start"></div>
+                                            <div class="route-line"></div>
+                                            <div class="route-end"></div>
+                                        </div>
+                                        <div class="safety-score">
+                                            <strong>95%</strong>
+                                            <span>Safe</span>
+                                        </div>
+                                    </div>
+                                    <div class="route-info">
+                                        <div class="info-item">
+                                            <span>Distance</span>
+                                            <strong>2.4 km</strong>
+                                        </div>
+                                        <div class="info-item">
+                                            <span>Time</span>
+                                            <strong>8 min</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge" data-animate>Features</div>
+                <h2 data-animate>Complete Safety Suite</h2>
+                <p data-animate>Everything you need to stay protected, all in one platform</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card" data-animate>
+                    <div class="feature-badge">Core</div>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3>Identity Verification</h3>
+                    <p>AI-powered verification scans your ID in seconds. Get your unique QR code for secure, contactless verification.</p>
+                    <ul class="feature-list">
+                        <li><span class="check">✓</span> Instant AI verification</li>
+                        <li><span class="check">✓</span> Unique QR code generation</li>
+                        <li><span class="check">✓</span> Secure document processing</li>
+                        <li><span class="check">✓</span> No data storage</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <div class="stat-mini">
+                            <strong>10s</strong>
+                            <span>Verification Time</span>
+                        </div>
+                        <div class="stat-mini">
+                            <strong>50K+</strong>
+                            <span>IDs Verified</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card featured" data-animate>
+                    <div class="feature-badge popular">Popular</div>
+                    <div class="feature-icon red">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3>Emergency SOS</h3>
+                    <p>One-tap emergency alert sends your live location to contacts. Voice activation available for hands-free use.</p>
+                    <ul class="feature-list">
+                        <li><span class="check">✓</span> One-tap activation</li>
+                        <li><span class="check">✓</span> Live GPS tracking</li>
+                        <li><span class="check">✓</span> Voice activation support</li>
+                        <li><span class="check">✓</span> Multiple contacts</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <div class="stat-mini">
+                            <strong>&lt;2s</strong>
+                            <span>Alert Speed</span>
+                        </div>
+                        <div class="stat-mini">
+                            <strong>10s</strong>
+                            <span>Update Interval</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card" data-animate>
+                    <div class="feature-badge">AI</div>
+                    <div class="feature-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M9 11a3 3 0 106 0 3 3 0 00-6 0z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3>SafeTrace Routes</h3>
+                    <p>AI analyzes crime data and community reports to recommend the safest path to your destination.</p>
+                    <ul class="feature-list">
+                        <li><span class="check">✓</span> AI route analysis</li>
+                        <li><span class="check">✓</span> Real-time safety scores</li>
+                        <li><span class="check">✓</span> Crime data integration</li>
+                        <li><span class="check">✓</span> Risk area alerts</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <div class="stat-mini">
+                            <strong>95%</strong>
+                            <span>Accuracy Rate</span>
+                        </div>
+                        <div class="stat-mini">
+                            <strong>24/7</strong>
+                            <span>Monitoring</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card" data-animate>
+                    <div class="feature-badge">Community</div>
+                    <div class="feature-icon cyan">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3>Silent Room</h3>
+                    <p>Real-time community platform for sharing safety alerts, theft reports, and local incidents instantly.</p>
+                    <ul class="feature-list">
+                        <li><span class="check">✓</span> Real-time updates</li>
+                        <li><span class="check">✓</span> Community alerts</li>
+                        <li><span class="check">✓</span> Anonymous posting</li>
+                        <li><span class="check">✓</span> Location tagging</li>
+                    </ul>
+                    <div class="feature-stats">
+                        <div class="stat-mini">
+                            <strong>1K+</strong>
+                            <span>Daily Posts</span>
+                        </div>
+                        <div class="stat-mini">
+                            <strong>Live</strong>
+                            <span>Updates</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose SafeNex -->
+    <section class="why-choose">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why Choose SafeNex?</h2>
+                <p>Built for your safety, designed for simplicity</p>
+            </div>
+            <div class="benefits-grid">
+                <div class="benefit-card" data-animate>
+                    <div class="benefit-number">01</div>
+                    <h3>Always Free</h3>
+                    <p>All features included. No premium tiers, no hidden costs, no credit card required. Safety shouldn't have a price tag.</p>
+                </div>
+                <div class="benefit-card" data-animate>
+                    <div class="benefit-number">02</div>
+                    <h3>Privacy First</h3>
+                    <p>Your data is encrypted end-to-end. We never sell your information. Location data auto-deletes after 30 days.</p>
+                </div>
+                <div class="benefit-card" data-animate>
+                    <div class="benefit-number">03</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Emergency alerts sent in under 2 seconds. Real-time updates every 10 seconds. When it matters, speed saves lives.</p>
+                </div>
+                <div class="benefit-card" data-animate>
+                    <div class="benefit-number">04</div>
+                    <h3>AI-Powered</h3>
+                    <p>Advanced AI analyzes patterns, predicts risks, and recommends the safest routes based on real-time data.</p>
+                </div>
+                <div class="benefit-card" data-animate>
+                    <div class="benefit-number">05</div>
+                    <h3>Community Driven</h3>
+                    <p>Join thousands of users sharing real-time safety information. Together, we create safer communities.</p>
+                </div>
+                <div class="benefit-card" data-animate>
+                    <div class="benefit-number">06</div>
+                    <h3>24/7 Available</h3>
+                    <p>Works anytime, anywhere. No downtime, no maintenance windows. Your safety never takes a break.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-badge" data-animate>How It Works</div>
+                <h2 data-animate>Get Started in Minutes</h2>
+                <p data-animate>Three simple steps to complete safety protection</p>
+            </div>
+            <div class="timeline-container">
+                <div class="timeline-track"></div>
+                <div class="timeline-steps">
+                    <div class="timeline-step" data-step="1">
+                        <div class="step-indicator">
+                            <div class="step-circle">
+                                <span>01</span>
+                            </div>
+                            <div class="step-connector"></div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon-wrapper">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="step-content">
+                                <h3>Create Account</h3>
+                                <p>Sign up in 30 seconds with email or phone. No credit card required, completely free forever.</p>
+                                <div class="step-features">
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>Email/Phone</span>
+                                    </div>
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>30 Seconds</span>
+                                    </div>
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>100% Free</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step" data-step="2">
+                        <div class="step-indicator">
+                            <div class="step-circle">
+                                <span>02</span>
+                            </div>
+                            <div class="step-connector"></div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon-wrapper">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="step-content">
+                                <h3>Get Verified</h3>
+                                <p>AI scans your ID instantly. Receive your unique QR code for secure, contactless verification.</p>
+                                <div class="step-features">
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>AI Powered</span>
+                                    </div>
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                            <path d="M12 15v2" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>Encrypted</span>
+                                    </div>
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>Instant</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="timeline-step" data-step="3">
+                        <div class="step-indicator">
+                            <div class="step-circle">
+                                <span>03</span>
+                            </div>
+                        </div>
+                        <div class="step-card">
+                            <div class="step-icon-wrapper">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="step-content">
+                                <h3>Stay Protected</h3>
+                                <p>Add emergency contacts, explore safe routes, and join community alerts. You're all set!</p>
+                                <div class="step-features">
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>Contacts</span>
+                                    </div>
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M9 11a3 3 0 106 0 3 3 0 00-6 0z" stroke="currentColor" stroke-width="2"/>
+                                            <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>Safe Routes</span>
+                                    </div>
+                                    <div class="feature-tag">
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        <span>Community</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security -->
+    <section class="security">
+        <div class="container">
+            <div class="security-content">
+                <div class="section-header">
+                    <div class="section-badge" data-animate>Security</div>
+                    <h2 data-animate>Enterprise-Grade Security</h2>
+                    <p data-animate>Your data is protected with bank-level encryption. We never store sensitive documents or sell your information.</p>
+                </div>
+                
+                <div class="security-grid" data-animate>
+                    <div class="security-card">
+                        <div class="security-icon-wrapper">
+                            <svg class="security-icon" viewBox="0 0 24 24" fill="none">
+                                <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+                                <path d="M12 15v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Encrypted Storage</h3>
+                        <p>All data encrypted at rest and in transit using industry-standard protocols</p>
+                        <div class="security-meta">
+                            <span class="meta-badge">AES-256</span>
+                            <span class="meta-badge">TLS 1.3</span>
+                        </div>
+                    </div>
+
+                    <div class="security-card">
+                        <div class="security-icon-wrapper">
+                            <svg class="security-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M9 6L7 18M17 6l-2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Auto-Delete</h3>
+                        <p>Location data automatically deleted after 30 days. Documents never stored on our servers</p>
+                        <div class="security-meta">
+                            <span class="meta-badge">30 Days</span>
+                            <span class="meta-badge">Zero Storage</span>
+                        </div>
+                    </div>
+
+                    <div class="security-card">
+                        <div class="security-icon-wrapper">
+                            <svg class="security-icon" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M6 12l10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>No Tracking</h3>
+                        <p>We don't sell or share your data. No third-party trackers. Complete privacy guaranteed</p>
+                        <div class="security-meta">
+                            <span class="meta-badge">Zero Ads</span>
+                            <span class="meta-badge">No Selling</span>
+                        </div>
+                    </div>
+
+                    <div class="security-card">
+                        <div class="security-icon-wrapper">
+                            <svg class="security-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                                <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <h3>Privacy First</h3>
+                        <p>You control what you share and when. Full transparency with every data interaction</p>
+                        <div class="security-meta">
+                            <span class="meta-badge">User Control</span>
+                            <span class="meta-badge">Transparent</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trust-section" data-animate>
+                    <div class="trust-header">
+                        <h3>Trusted by thousands worldwide</h3>
+                        <p>Industry-leading security standards</p>
+                    </div>
+                    <div class="trust-grid">
+                        <div class="trust-item">
+                            <div class="trust-icon-box">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="trust-content">
+                                <strong>Bank-Level Security</strong>
+                                <span>Military-grade encryption</span>
+                            </div>
+                        </div>
+
+                        <div class="trust-item">
+                            <div class="trust-icon-box">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="trust-content">
+                                <strong>Zero Data Selling</strong>
+                                <span>Your privacy is guaranteed</span>
+                            </div>
+                        </div>
+
+                        <div class="trust-item">
+                            <div class="trust-icon-box">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="trust-content">
+                                <strong>Real-Time Processing</strong>
+                                <span>Instant secure operations</span>
+                            </div>
+                        </div>
+
+                        <div class="trust-item">
+                            <div class="trust-icon-box">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="trust-content">
+                                <strong>24/7 Availability</strong>
+                                <span>Always online, always secure</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <h2>Trusted by Thousands</h2>
+                <p>Real stories from real users</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial" data-animate>
+                    <div class="quote">"</div>
+                    <div class="stars">★★★★★</div>
+                    <p>"SafeNex saved me during an emergency. The SOS button sent my location to my family instantly. I felt safe knowing help was on the way."</p>
+                    <div class="author">
+                        <div class="avatar">S</div>
+                        <div>
+                            <div class="name">Sarah Johnson</div>
+                            <div class="role">College Student • New York</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial" data-animate>
+                    <div class="quote">"</div>
+                    <div class="stars">★★★★★</div>
+                    <p>"SafeTrace changed my commute. I avoid dangerous areas and always take the safest route home. The AI recommendations are spot-on!"</p>
+                    <div class="author">
+                        <div class="avatar">M</div>
+                        <div>
+                            <div class="name">Michael Chen</div>
+                            <div class="role">Software Engineer • San Francisco</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial" data-animate>
+                    <div class="quote">"</div>
+                    <div class="stars">★★★★★</div>
+                    <p>"Silent Room keeps me informed about my neighborhood. Real-time alerts help me stay aware and make better decisions about where I go."</p>
+                    <div class="author">
+                        <div class="avatar">E</div>
+                        <div>
+                            <div class="name">Emily Rodriguez</div>
+                            <div class="role">Healthcare Worker • Chicago</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial" data-animate>
+                    <div class="quote">"</div>
+                    <div class="stars">★★★★★</div>
+                    <p>"As a parent, SafeNex gives me peace of mind. My daughter uses it daily and I can track her location during emergencies. Highly recommend!"</p>
+                    <div class="author">
+                        <div class="avatar">D</div>
+                        <div>
+                            <div class="name">David Martinez</div>
+                            <div class="role">Parent • Los Angeles</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial" data-animate>
+                    <div class="quote">"</div>
+                    <div class="stars">★★★★★</div>
+                    <p>"The verified ID feature is brilliant. I use my QR code for deliveries and it's so much safer than showing my actual ID. Love it!"</p>
+                    <div class="author">
+                        <div class="avatar">P</div>
+                        <div>
+                            <div class="name">Priya Sharma</div>
+                            <div class="role">Business Owner • Austin</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial" data-animate>
+                    <div class="quote">"</div>
+                    <div class="stars">★★★★★</div>
+                    <p>"Best safety app I've used. The interface is clean, features work flawlessly, and knowing my data is encrypted makes me trust it completely."</p>
+                    <div class="author">
+                        <div class="avatar">J</div>
+                        <div>
+                            <div class="name">James Wilson</div>
+                            <div class="role">Security Analyst • Seattle</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="rating-summary" data-animate>
+                <div class="rating-item">
+                    <div class="rating-value">4.9/5</div>
+                    <div class="rating-label">Average Rating</div>
+                </div>
+                <div class="rating-item">
+                    <div class="rating-value">10K+</div>
+                    <div class="rating-label">Happy Users</div>
+                </div>
+                <div class="rating-item">
+                    <div class="rating-value">98%</div>
+                    <div class="rating-label">Would Recommend</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2>Frequently Asked Questions</h2>
+                <p>Everything you need to know</p>
+            </div>
+            <div class="faq-list">
+                <div class="faq-item" data-animate>
+                    <button class="faq-question">
+                        <span>Is SafeNex really free?</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! 100% free forever. All features included. No hidden costs.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-animate>
+                    <button class="faq-question">
+                        <span>How does Emergency SOS work?</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>One tap sends your live location to emergency contacts via SMS and app. Updates every 10 seconds.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-animate>
+                    <button class="faq-question">
+                        <span>What makes SafeTrace different?</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>AI analyzes crime data to show the safest route, not just the fastest. Safety scores for every path.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-animate>
+                    <button class="faq-question">
+                        <span>Is my data secure?</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes. Bank-level encryption. Documents never stored. Location auto-deletes after 30 days.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-animate>
+                    <button class="faq-question">
+                        <span>Which devices work?</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>All modern browsers on desktop, tablet, and mobile. iOS and Android apps coming soon.</p>
+                    </div>
+                </div>
+                <div class="faq-item" data-animate>
+                    <button class="faq-question">
+                        <span>Can I post anonymously?</span>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! Silent Room supports anonymous posting. Choose per post whether to show your verified badge.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Stay Safe?</h2>
+                <p>Join thousands who trust SafeNex. Free forever, no credit card required.</p>
+                <a href="/onboarding.html" class="btn-primary btn-large">
+                    Get Started Free
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#gradient2)"/>
+                        <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="gradient2" x1="4" y1="2" x2="36" y2="41">
+                                <stop stop-color="#2563EB"/><stop offset="1" stop-color="#06B6D4"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    SafeNex
+                </div>
+                <p>Your Digital Safety Companion</p>
+                <p class="copyright">© 2024 SafeNex. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="landing.js"></script>
+</body>
+</html>

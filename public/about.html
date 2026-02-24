@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#04091A" />
+    <title>About Us — SafeNex</title>
+    <link rel="stylesheet" href="about.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#shield-gradient)" />
+                    <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <defs>
+                        <linearGradient id="shield-gradient" x1="4" y1="2" x2="36" y2="41" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#2563EB" />
+                            <stop offset="1" stop-color="#06B6D4" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>SafeNex</span>
+            </a>
+            <a href="/dashboard" class="nav-back">← Back to Dashboard</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <div class="hero-badge animate-fade-in">Our Mission</div>
+            <h1 class="hero-title animate-slide-up">Building a Safer Tomorrow, <span class="gradient-text">Today</span></h1>
+            <p class="hero-subtitle animate-slide-up" style="animation-delay: 0.1s">Empowering communities with AI-driven safety solutions in an increasingly dangerous world</p>
+        </div>
+        <div class="hero-bg"></div>
+        <div class="floating-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+    </section>
+
+    <!-- Crisis Statistics Section -->
+    <section class="section crisis-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge animate-fade-in">The Crisis</span>
+                <h2 class="section-title animate-slide-up">The Numbers Don't Lie</h2>
+                <p class="section-desc animate-slide-up">Real data from India's National Crime Records Bureau and emergency services reveal an alarming trend</p>
+            </div>
+
+            <!-- Animated Counter Stats -->
+            <div class="counter-grid">
+                <div class="counter-card animate-scale">
+                    <div class="counter-icon counter-icon--red">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="counter-value" data-target="445000">0</div>
+                    <div class="counter-label">Cases Against Women (2022)</div>
+                    <div class="counter-detail">51 FIRs every hour</div>
+                    <div class="counter-trend trend-up">+87% since 2011</div>
+                </div>
+
+                <div class="counter-card animate-scale" style="animation-delay: 0.1s">
+                    <div class="counter-icon counter-icon--orange">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="counter-value" data-target="25">0</div>
+                    <div class="counter-suffix">-40 min</div>
+                    <div class="counter-label">Emergency Response Time</div>
+                    <div class="counter-detail">Traditional services in urban India</div>
+                    <div class="counter-trend trend-up">+4 min since 2014</div>
+                </div>
+
+                <div class="counter-card animate-scale" style="animation-delay: 0.2s">
+                    <div class="counter-icon counter-icon--yellow">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5"/>
+                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="counter-value" data-target="40">0</div>
+                    <div class="counter-suffix">%</div>
+                    <div class="counter-label">Women Fear for Safety</div>
+                    <div class="counter-detail">In urban areas (2024)</div>
+                    <div class="counter-trend trend-up">14% for ages 18-24</div>
+                </div>
+
+                <div class="counter-card animate-scale" style="animation-delay: 0.3s">
+                    <div class="counter-icon counter-icon--red">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="counter-value" data-target="1220">0</div>
+                    <div class="counter-label">Daily Crime Reports</div>
+                    <div class="counter-detail">Against women in India</div>
+                    <div class="counter-trend trend-up">Every minute counts</div>
+                </div>
+            </div>
+
+            <!-- Interactive Charts -->
+            <div class="charts-grid">
+                <div class="chart-card animate-fade-in">
+                    <h3 class="chart-title">Crime Against Women Trend (2011-2022)</h3>
+                    <div class="chart-container">
+                        <canvas id="crimeChart"></canvas>
+                    </div>
+                    <p class="chart-note">Source: National Crime Records Bureau (NCRB)</p>
+                </div>
+
+                <div class="chart-card animate-fade-in" style="animation-delay: 0.2s">
+                    <h3 class="chart-title">Emergency Response Time Comparison</h3>
+                    <div class="chart-container">
+                        <canvas id="responseChart"></canvas>
+                    </div>
+                    <p class="chart-note">Traditional vs SafeNex AI-powered response</p>
+                </div>
+            </div>
+
+            <!-- Impact Stats -->
+            <div class="impact-grid">
+                <div class="impact-card animate-slide-up">
+                    <div class="impact-number">67</div>
+                    <div class="impact-label">Crime rate per 100,000 women (2022)</div>
+                    <div class="impact-change">↑ from 57 in 2020</div>
+                </div>
+                <div class="impact-card animate-slide-up" style="animation-delay: 0.1s">
+                    <div class="impact-number">7%</div>
+                    <div class="impact-label">Women harassed in public (2024)</div>
+                    <div class="impact-change">Doubles to 14% for young women</div>
+                </div>
+                <div class="impact-card animate-slide-up" style="animation-delay: 0.2s">
+                    <div class="impact-number">55-75</div>
+                    <div class="impact-label">Minutes to hospital in emergencies</div>
+                    <div class="impact-change">Far exceeds "golden hour"</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="section solution-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-badge">Our Solution</span>
+                <h2 class="section-title">The SafeNex Platform</h2>
+                <p class="section-desc">We're building an AI-powered safety ecosystem that provides immediate emergency response, intelligent route planning, and community-driven protection.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon--red">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" fill="currentColor"/>
+                            <path d="M12 8v4l3 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Nexa AI SOS</h3>
+                    <p class="feature-desc">AI-powered emergency detection that activates instantly when you need help. Tracks your location, sends alerts to emergency contacts, and provides real-time movement trail.</p>
+                    <ul class="feature-list">
+                        <li>Keyword-based emergency activation</li>
+                        <li>Voice-to-text conversion</li>
+                        <li>GPS trail tracking (last 3 locations)</li>
+                        <li>Direction and movement analysis</li>
+                        <li>Stationary detection alerts</li>
+                        <li>Instant WhatsApp emergency alerts</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon--blue">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M12 6v2M12 16v2M6 12H4M20 12h-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">SafeTrace</h3>
+                    <p class="feature-desc">Risk-aware route navigation that helps you avoid dangerous areas. Real-time threat data and community reports guide you through the safest paths.</p>
+                    <ul class="feature-list">
+                        <li>Live threat mapping</li>
+                        <li>Safe route recommendations</li>
+                        <li>Community-reported incidents</li>
+                        <li>Real-time zone safety ratings</li>
+                        <li>Alternative path suggestions</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon feature-icon--cyan">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M9 10h6M9 14h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Silent Room</h3>
+                    <p class="feature-desc">Community safety reporting hub where users can share incidents, warnings, and support each other. Silent alerts for discreet emergency reporting.</p>
+                    <ul class="feature-list">
+                        <li>Anonymous incident reporting</li>
+                        <li>Community safety feed</li>
+                        <li>Acoustic anomaly detection</li>
+                        <li>Silent emergency alerts</li>
+                        <li>Real-time community updates</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission Section -->
+    <section class="section mission-section">
+        <div class="container">
+            <div class="mission-content">
+                <div class="mission-text">
+                    <span class="section-badge">Our Mission</span>
+                    <h2 class="section-title">Protecting Lives Through Technology</h2>
+                    <p class="mission-desc">SafeNex was born from a simple but powerful belief: everyone deserves to feel safe. In a world where crime rates are rising and traditional safety measures are failing, we're leveraging artificial intelligence and community power to create a new paradigm of urban safety.</p>
+                    <p class="mission-desc">Our mission is to reduce response times from minutes to seconds, transform isolated individuals into connected communities, and give everyone the tools they need to navigate their world safely.</p>
+                    <div class="mission-values">
+                        <div class="value-item">
+                            <div class="value-icon">🛡️</div>
+                            <div>
+                                <div class="value-title">Protection First</div>
+                                <div class="value-desc">Every feature designed with user safety as the top priority</div>
+                            </div>
+                        </div>
+                        <div class="value-item">
+                            <div class="value-icon">⚡</div>
+                            <div>
+                                <div class="value-title">Instant Response</div>
+                                <div class="value-desc">AI-powered systems that react in seconds, not minutes</div>
+                            </div>
+                        </div>
+                        <div class="value-item">
+                            <div class="value-icon">🤝</div>
+                            <div>
+                                <div class="value-title">Community Power</div>
+                                <div class="value-desc">Strength in numbers through connected safety networks</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mission-visual">
+                    <div class="mission-card">
+                        <div class="mission-stat">98.4%</div>
+                        <div class="mission-label">Safety Index</div>
+                    </div>
+                    <div class="mission-card">
+                        <div class="mission-stat">&lt;2s</div>
+                        <div class="mission-label">Response Time</div>
+                    </div>
+                    <div class="mission-card">
+                        <div class="mission-stat">24/7</div>
+                        <div class="mission-label">AI Monitoring</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Founder Section -->
+    <section class="section founder-section">
+        <div class="container">
+            <div class="founder-content">
+                <div class="founder-image">
+                    <div class="founder-avatar">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="8" r="4" fill="currentColor"/>
+                            <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="founder-badge">Founder & CEO</div>
+                </div>
+                <div class="founder-text">
+                    <span class="section-badge">Leadership</span>
+                    <h2 class="section-title">Ansari Abdullah Mohammad Adil</h2>
+                    <p class="founder-title">Founder & CEO, SafeNex</p>
+                    <p class="founder-bio">Driven by a vision to make cities safer for everyone, Ansari founded SafeNex to address the growing safety crisis in urban areas. With a deep understanding of technology and a passion for social impact, he leads the development of AI-powered safety solutions that are transforming how communities protect themselves.</p>
+                    <p class="founder-bio">"Every person deserves to walk home safely. Every parent deserves peace of mind. Every community deserves the tools to protect its members. That's why we built SafeNex — to turn that vision into reality through the power of artificial intelligence and human connection."</p>
+                    <div class="founder-stats">
+                        <div class="founder-stat">
+                            <div class="founder-stat-value">2026</div>
+                            <div class="founder-stat-label">Founded</div>
+                        </div>
+                        <div class="founder-stat">
+                            <div class="founder-stat-value">3</div>
+                            <div class="founder-stat-label">Core Modules</div>
+                        </div>
+                        <div class="founder-stat">
+                            <div class="founder-stat-value">AI-Powered</div>
+                            <div class="founder-stat-label">Technology</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="section cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">Join the SafeNex Community</h2>
+                <p class="cta-desc">Be part of the movement to make our cities safer. Together, we can create a world where everyone feels protected.</p>
+                <div class="cta-buttons">
+                    <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                    <a href="/sos-redesign.html" class="btn btn-secondary">Try Nexa AI SOS</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#footer-shield)" />
+                        <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <defs>
+                            <linearGradient id="footer-shield" x1="4" y1="2" x2="36" y2="41" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#2563EB" />
+                                <stop offset="1" stop-color="#06B6D4" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>SafeNex</span>
+                </div>
+                <p class="footer-text">Building a safer tomorrow through AI-powered protection</p>
+                <p class="footer-copy">© 2026 SafeNex. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Animated Counter
+        function animateCounter(element) {
+            const target = parseInt(element.dataset.target);
+            const duration = 2000;
+            const step = target / (duration / 16);
+            let current = 0;
+
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    element.textContent = target.toLocaleString();
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current).toLocaleString();
+                }
+            }, 16);
+        }
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    
+                    // Animate counters
+                    if (entry.target.classList.contains('counter-value')) {
+                        animateCounter(entry.target);
+                    }
+                }
+            });
+        }, observerOptions);
+
+        // Observe all animated elements
+        document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale, .counter-value').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Crime Chart
+        const crimeCtx = document.getElementById('crimeChart');
+        if (crimeCtx) {
+            new Chart(crimeCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2011', '2013', '2015', '2017', '2019', '2021', '2022'],
+                    datasets: [{
+                        label: 'Cases (in thousands)',
+                        data: [228.6, 309.5, 327.4, 359.8, 405.9, 428.3, 445.0],
+                        borderColor: '#EF4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#EF4444',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(4, 9, 26, 0.9)',
+                            titleColor: '#E2E8F0',
+                            bodyColor: '#94A3B8',
+                            borderColor: 'rgba(37, 99, 235, 0.3)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(1) + 'k cases';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94A3B8',
+                                callback: function(value) {
+                                    return value + 'k';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94A3B8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Response Time Chart
+        const responseCtx = document.getElementById('responseChart');
+        if (responseCtx) {
+            new Chart(responseCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Traditional\nServices', 'Police\n(Best Case)', 'SafeNex\nAI SOS'],
+                    datasets: [{
+                        label: 'Response Time (minutes)',
+                        data: [32.5, 7, 0.03],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(34, 197, 94, 0.8)'
+                        ],
+                        borderColor: [
+                            '#EF4444',
+                            '#F59E0B',
+                            '#22C55E'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(4, 9, 26, 0.9)',
+                            titleColor: '#E2E8F0',
+                            bodyColor: '#94A3B8',
+                            borderColor: 'rgba(37, 99, 235, 0.3)',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    if (value < 1) {
+                                        return (value * 60).toFixed(0) + ' seconds';
+                                    }
+                                    return value.toFixed(1) + ' minutes';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94A3B8',
+                                callback: function(value) {
+                                    if (value < 1) return (value * 60) + 's';
+                                    return value + 'm';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94A3B8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeNex Admin Dashboard</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 Admin Access</h2>
+                <p>Enter admin password to continue</p>
+            </div>
+            <div class="modal-body">
+                <input type="password" id="adminPasswordInput" placeholder="Enter password" autofocus />
+                <button id="verifyPasswordBtn" class="btn-primary">Verify</button>
+                <div id="passwordError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <h1>🛡️ SafeNex Admin</h1>
+                <span class="live-indicator">● LIVE</span>
+            </div>
+            <div class="top-bar-right">
+                <span id="adminEmail" class="admin-email"></span>
+                <button id="logoutBtn" class="btn-logout">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="dashboard-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item active" data-section="overview">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Overview</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="users">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">Users</span>
+                        <span class="nav-badge" id="usersBadge">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="danger-zones">
+                        <span class="nav-icon">⚠️</span>
+                        <span class="nav-text">Danger Zones</span>
+                        <span class="nav-badge" id="zonesBadge">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="complaints">
+                        <span class="nav-icon">🔒</span>
+                        <span class="nav-text">Complaints</span>
+                        <span class="nav-badge badge-warning" id="complaintsBadge">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="community-posts">
+                        <span class="nav-icon">📢</span>
+                        <span class="nav-text">Community Posts</span>
+                        <span class="nav-badge" id="communityBadge">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="emergency-alerts">
+                        <span class="nav-icon">🚨</span>
+                        <span class="nav-text">Emergency Alerts</span>
+                        <span class="nav-badge badge-danger" id="emergencyBadge">0</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="system-health">
+                        <span class="nav-icon">🏥</span>
+                        <span class="nav-text">System Health</span>
+                    </a>
+                    <a href="#" class="nav-item" data-section="activity">
+                        <span class="nav-icon">📝</span>
+                        <span class="nav-text">Activity Log</span>
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Main Panel -->
+            <main class="main-panel">
+                <!-- Overview Section -->
+                <section id="overview-section" class="content-section active">
+                    <div class="section-header">
+                        <h2>Dashboard Overview</h2>
+                        <button class="btn-refresh" onclick="loadOverview()">🔄 Refresh</button>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalUsers">0</div>
+                                <div class="stat-label">Total Users</div>
+                                <div class="stat-detail" id="usersDetail">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="verifiedUsers">0</div>
+                                <div class="stat-label">Verified Users</div>
+                                <div class="stat-detail" id="verifiedDetail">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🟢</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="onlineUsers">0</div>
+                                <div class="stat-label">Online Now</div>
+                                <div class="stat-detail" id="onlineDetail">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚠️</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalZones">0</div>
+                                <div class="stat-label">Danger Zones</div>
+                                <div class="stat-detail" id="zonesDetail">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📢</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalPosts">0</div>
+                                <div class="stat-label">Silent Room Posts</div>
+                                <div class="stat-detail" id="postsDetail">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🚨</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalSOS">0</div>
+                                <div class="stat-label">SOS Sessions</div>
+                                <div class="stat-detail" id="sosDetail">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Real-Time Activity -->
+                    <div class="activity-feed">
+                        <h3>Real-Time Activity</h3>
+                        <div id="realtimeActivity" class="activity-list"></div>
+                    </div>
+                </section>
+
+                <!-- Users Section -->
+                <section id="users-section" class="content-section">
+                    <div class="section-header">
+                        <h2>User Management</h2>
+                        <div class="section-actions">
+                            <input type="text" id="userSearch" placeholder="Search users..." class="search-input" />
+                            <select id="userFilter" class="filter-select">
+                                <option value="">All Users</option>
+                                <option value="online">Online Now</option>
+                                <option value="verified">Verified</option>
+                                <option value="unverified">Unverified</option>
+                            </select>
+                            <button class="btn-refresh" onclick="loadUsers()">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <div id="usersContent" class="table-container">
+                        <div class="loading">Loading users...</div>
+                    </div>
+                </section>
+
+                <!-- Danger Zones Section -->
+                <section id="danger-zones-section" class="content-section">
+                    <div class="section-header">
+                        <div class="section-title-group">
+                            <h2>⚠️ Danger Zones Management</h2>
+                            <p class="section-subtitle">Monitor and manage verified environmental vulnerability zones</p>
+                        </div>
+                        <button class="btn-primary" onclick="openAddZoneModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add Zone
+                        </button>
+                    </div>
+
+                    <!-- Stats Overview -->
+                    <div class="zones-stats-grid">
+                        <div class="zone-stat-card critical">
+                            <div class="zone-stat-icon">🔴</div>
+                            <div class="zone-stat-content">
+                                <div class="zone-stat-value" id="criticalZonesCount">0</div>
+                                <div class="zone-stat-label">Critical Zones</div>
+                            </div>
+                        </div>
+                        <div class="zone-stat-card high">
+                            <div class="zone-stat-icon">🟠</div>
+                            <div class="zone-stat-content">
+                                <div class="zone-stat-value" id="highZonesCount">0</div>
+                                <div class="zone-stat-label">High Risk Zones</div>
+                            </div>
+                        </div>
+                        <div class="zone-stat-card medium">
+                            <div class="zone-stat-icon">🟡</div>
+                            <div class="zone-stat-content">
+                                <div class="zone-stat-value" id="mediumZonesCount">0</div>
+                                <div class="zone-stat-label">Medium Risk Zones</div>
+                            </div>
+                        </div>
+                        <div class="zone-stat-card low">
+                            <div class="zone-stat-icon">🟢</div>
+                            <div class="zone-stat-content">
+                                <div class="zone-stat-value" id="lowZonesCount">0</div>
+                                <div class="zone-stat-label">Low Risk Zones</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="zonesContent" class="zones-table-container">
+                        <div class="loading">Loading danger zones...</div>
+                    </div>
+                </section>
+
+                <!-- Complaints Section -->
+                <section id="complaints-section" class="content-section">
+                    <div class="section-header">
+                        <h2>🔒 Private Complaints</h2>
+                        <div class="section-actions">
+                            <select id="complaintStatusFilter" class="filter-select">
+                                <option value="">All Status</option>
+                                <option value="pending">⏳ Pending</option>
+                                <option value="approved">👁️ Under Review</option>
+                                <option value="action_taken">✅ Action Taken</option>
+                                <option value="rejected">❌ Rejected</option>
+                            </select>
+                            <button class="btn-refresh" onclick="loadComplaints()">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Bar -->
+                    <div class="silent-room-stats">
+                        <div class="stat-pill clickable" onclick="filterComplaints('all')">
+                            <span class="stat-pill-label">Total Complaints</span>
+                            <span class="stat-pill-value" id="totalComplaints">0</span>
+                        </div>
+                        <div class="stat-pill pending clickable" onclick="filterComplaints('pending')">
+                            <span class="stat-pill-label">⏳ Pending</span>
+                            <span class="stat-pill-value" id="pendingComplaints">0</span>
+                        </div>
+                        <div class="stat-pill action clickable" onclick="filterComplaints('action_taken')">
+                            <span class="stat-pill-label">✅ Action Taken</span>
+                            <span class="stat-pill-value" id="actionTakenComplaints">0</span>
+                        </div>
+                        <div class="stat-pill complaint clickable" onclick="filterComplaints('rejected')">
+                            <span class="stat-pill-label">❌ Rejected</span>
+                            <span class="stat-pill-value" id="rejectedComplaints">0</span>
+                        </div>
+                    </div>
+
+                    <div id="complaintsContent" class="posts-grid-enhanced">
+                        <div class="loading">Loading complaints...</div>
+                    </div>
+                </section>
+
+                <!-- Community Posts Section -->
+                <section id="community-posts-section" class="content-section">
+                    <div class="section-header">
+                        <h2>📢 Community Posts Moderation</h2>
+                        <div class="section-actions">
+                            <select id="communityTypeFilter" class="filter-select">
+                                <option value="">All Types</option>
+                                <option value="general">General</option>
+                                <option value="theft">Theft Alert</option>
+                                <option value="safety_alert">Safety Alert</option>
+                                <option value="lost_found">Lost & Found</option>
+                                <option value="suspicious">Suspicious Activity</option>
+                            </select>
+                            <button class="btn-refresh" onclick="loadCommunityPosts()">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Bar -->
+                    <div class="silent-room-stats">
+                        <div class="stat-pill clickable" onclick="filterCommunityPosts('all')">
+                            <span class="stat-pill-label">Total Posts</span>
+                            <span class="stat-pill-value" id="totalCommunityPosts">0</span>
+                        </div>
+                        <div class="stat-pill pending clickable" onclick="filterCommunityPosts('flagged')">
+                            <span class="stat-pill-label">⚠️ Flagged Posts</span>
+                            <span class="stat-pill-value" id="flaggedCommunityPosts">0</span>
+                        </div>
+                        <div class="stat-pill complaint clickable" onclick="filterCommunityPosts('deleted')">
+                            <span class="stat-pill-label">🗑️ Deleted Posts</span>
+                            <span class="stat-pill-value" id="deletedCommunityPosts">0</span>
+                        </div>
+                    </div>
+
+                    <div id="communityPostsContent" class="posts-grid-enhanced">
+                        <div class="loading">Loading community posts...</div>
+                    </div>
+                </section>
+
+                <!-- Emergency Alerts Section -->
+                <section id="emergency-alerts-section" class="content-section">
+                    <div class="section-header">
+                        <h2>🚨 Emergency Alerts (SOS)</h2>
+                        <div class="section-actions">
+                            <select id="emergencyStatusFilter" class="filter-select">
+                                <option value="">All Alerts</option>
+                                <option value="active">🔴 Active</option>
+                                <option value="resolved">✅ Resolved</option>
+                                <option value="false_alarm">⚠️ False Alarm</option>
+                            </select>
+                            <select id="emergencyTimeFilter" class="filter-select">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                            </select>
+                            <button class="btn-refresh" onclick="loadEmergencyAlerts()">🔄 Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Bar -->
+                    <div class="emergency-stats">
+                        <div class="stat-pill stat-pill--danger">
+                            <span class="stat-pill-label">🔴 Active Alerts</span>
+                            <span class="stat-pill-value" id="activeAlerts">0</span>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="stat-pill-label">Total Alerts</span>
+                            <span class="stat-pill-value" id="totalAlerts">0</span>
+                        </div>
+                        <div class="stat-pill stat-pill--success">
+                            <span class="stat-pill-label">✅ Resolved</span>
+                            <span class="stat-pill-value" id="resolvedAlerts">0</span>
+                        </div>
+                        <div class="stat-pill stat-pill--warning">
+                            <span class="stat-pill-label">⚠️ False Alarms</span>
+                            <span class="stat-pill-value" id="falseAlarms">0</span>
+                        </div>
+                        <div class="stat-pill">
+                            <span class="stat-pill-label">Avg Response Time</span>
+                            <span class="stat-pill-value" id="avgResponseTime">N/A</span>
+                        </div>
+                    </div>
+
+                    <div id="emergencyAlertsContent" class="emergency-alerts-grid">
+                        <div class="loading">Loading emergency alerts...</div>
+                    </div>
+                </section>
+
+                <!-- System Health Section -->
+                <section id="system-health-section" class="content-section">
+                    <div class="section-header">
+                        <h2>System Health Monitor</h2>
+                        <button class="btn-refresh" onclick="loadSystemHealth()">🔄 Refresh</button>
+                    </div>
+
+                    <div class="health-grid" id="healthGrid">
+                        <div class="loading">Loading system health...</div>
+                    </div>
+                </section>
+
+                <!-- Activity Log Section -->
+                <section id="activity-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Activity Log</h2>
+                        <select id="activityFilter" class="filter-select">
+                            <option value="">All Actions</option>
+                            <option value="login">Logins</option>
+                            <option value="user_verification_changed">Verifications</option>
+                            <option value="danger_zone_created">Danger Zones</option>
+                            <option value="silent_room_moderation">Moderations</option>
+                        </select>
+                    </div>
+
+                    <div id="activityContent" class="activity-log">
+                        <div class="loading">Loading activity...</div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Zone Modal -->
+    <div id="addZoneModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Add Danger Zone</h2>
+                <button class="close-btn" onclick="closeModal('addZoneModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="zoneForm">
+                    <div class="form-group">
+                        <label>Place Name *</label>
+                        <input type="text" id="zonePlaceName" required />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Latitude *</label>
+                            <input type="number" step="any" id="zoneLatitude" placeholder="19.0760" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Longitude *</label>
+                            <input type="number" step="any" id="zoneLongitude" placeholder="72.8777" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Risk Level *</label>
+                            <select id="zoneRiskLevel" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Radius (meters) *</label>
+                            <input type="number" id="zoneRadius" value="200" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="zoneCategory" required>
+                            <option value="crime">Crime Hotspot</option>
+                            <option value="accident">Accident Prone</option>
+                            <option value="harassment">Harassment Zone</option>
+                            <option value="theft">Theft Area</option>
+                            <option value="general">General Risk</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="zoneDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Save Zone</button>
+                        <button type="button" class="btn-secondary" onclick="closeModal('addZoneModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Detail Modal -->
+    <div id="postDetailModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Post Details & Moderation</h2>
+                <button class="close-btn" onclick="closeModal('postDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="postDetailContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Response Modal -->
+    <div id="adminResponseModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Send Admin Response</h2>
+                <button class="close-btn" onclick="closeModal('adminResponseModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Response Message *</label>
+                    <textarea id="adminResponseText" rows="5" placeholder="Enter your response to the user..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Action Status *</label>
+                    <select id="adminResponseStatus">
+                        <option value="action_taken">✅ Action Taken</option>
+                        <option value="under_review">🔍 Under Review</option>
+                        <option value="resolved">✔️ Resolved</option>
+                        <option value="no_action">❌ No Action Required</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-primary" onclick="sendAdminResponse()">Send Response</button>
+                    <button class="btn-secondary" onclick="closeModal('adminResponseModal')">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Detail Modal -->
+    <div id="emergencyDetailModal" class="modal" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>🚨 Emergency Alert Details</h2>
+                <button class="close-btn" onclick="closeModal('emergencyDetailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="emergencyDetailContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

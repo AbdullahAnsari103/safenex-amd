@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta name="theme-color" content="#1A0A0A" />
+    <title>Nexa AI SOS — Emergency Protocol</title>
+    <link rel="stylesheet" href="sos-new.css" />
+</head>
+<body>
+    <!-- Chat Interface (Normal Mode) -->
+    <div class="sos-container" id="sosContainer">
+        <div class="sos-header">
+            <div class="sos-brand">
+                <div class="sos-logo">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#logo-grad)"/>
+                        <defs>
+                            <linearGradient id="logo-grad" x1="4" y1="2" x2="36" y2="41">
+                                <stop stop-color="#10B981"/>
+                                <stop offset="1" stop-color="#14B8A6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="sos-brand__info">
+                    <span class="sos-brand__name">Nexa AI</span>
+                    <span class="sos-brand__status">
+                        <span class="sos-brand__status-dot"></span>
+                        <span class="sos-brand__status-text">Monitoring Active</span>
+                    </span>
+                </div>
+            </div>
+            <button class="sos-settings-btn" id="settingsBtn" aria-label="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="sos-chat" id="chatMessages">
+            <div class="sos-message sos-message--ai">
+                <div class="sos-message__avatar">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="sos-message__content">
+                    <div class="sos-message__text">
+                        Welcome to Nexa AI SOS. I'm actively monitoring for emergency keywords. Type "help", "emergency", or "danger" to activate the emergency protocol.
+                    </div>
+                    <div class="sos-message__time">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyword Monitor Badge -->
+        <div class="sos-monitor-badge">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            AI ACTIVELY MONITORS FOR KEYWORDS
+        </div>
+
+        <!-- Input -->
+        <div class="sos-input-wrap">
+            <div class="sos-input-container" id="inputContainer">
+                <input 
+                    type="text" 
+                    class="sos-input" 
+                    id="chatInput" 
+                    placeholder="Describe your emergency..." 
+                    autocomplete="off"
+                />
+                <button class="sos-voice-btn" id="voiceBtn" aria-label="Voice input">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <button class="sos-send-btn" id="sendBtn" aria-label="Send message">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Emergency Status Display -->
+    <div class="sos-emergency" id="emergencyScreen" hidden>
+        <div class="sos-emergency__header">
+            <div class="sos-emergency__brand">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="currentColor"/>
+                </svg>
+                NEXA AI SECURITY
+            </div>
+            <span class="sos-emergency__live">● LIVE</span>
+        </div>
+
+        <div class="sos-emergency__sos">
+            <div class="sos-emergency__sos-ring"></div>
+            <div class="sos-emergency__sos-ring"></div>
+            <div class="sos-emergency__sos-ring"></div>
+            <div class="sos-emergency__sos-text">SOS</div>
+        </div>
+
+        <h1 class="sos-emergency__title">Protocol Activated</h1>
+        <p class="sos-emergency__subtitle">Emergency services and contacts are being notified.</p>
+
+        <div class="sos-emergency__timer">
+            <div class="sos-timer-box">
+                <span class="sos-timer-value" id="timerHours">00</span>
+                <span class="sos-timer-label">HOURS</span>
+            </div>
+            <div class="sos-timer-box">
+                <span class="sos-timer-value" id="timerMins">00</span>
+                <span class="sos-timer-label">MINS</span>
+            </div>
+            <div class="sos-timer-box">
+                <span class="sos-timer-value" id="timerSecs">00</span>
+                <span class="sos-timer-label">SECS</span>
+            </div>
+        </div>
+
+        <div class="sos-emergency__log">
+            <h3 class="sos-emergency__log-title">SYSTEM LOG</h3>
+            <div class="sos-emergency__log-list" id="systemLog"></div>
+        </div>
+
+        <div class="sos-emergency__tracking" id="trackingSection">
+            <h3 class="sos-emergency__tracking-title">LIVE TRACKING</h3>
+            <div class="sos-emergency__map" id="mapContainer">
+                <div class="sos-map-placeholder">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5"/>
+                        <circle cx="12" cy="9" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    <span id="locationText">Acquiring location...</span>
+                </div>
+            </div>
+            <button class="sos-resend-btn" id="resendBtn" hidden>
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21 2l-2 2m-7-2v6l3-3M3 12a9 9 0 0118 0 9 9 0 01-18 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Resend Updated Location
+            </button>
+        </div>
+
+        <div class="sos-emergency__end">
+            <button class="sos-end-btn" id="endBtn">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                Slide to End Emergency
+            </button>
+        </div>
+
+        <div class="sos-emergency__footer">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            Nexa AI ID: <span id="sessionId">—</span> · <a href="#" id="falseAlarmLink">False Alarm?</a>
+        </div>
+    </div>
+
+    <!-- Config Sheet -->
+    <div class="sos-config-overlay" id="configOverlay" hidden>
+        <div class="sos-config">
+            <div class="sos-config__header">
+                <button class="sos-config__back" id="configBack">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+                <h2>Nexa Shield Config</h2>
+                <button class="sos-config__save" id="configSave">Save</button>
+            </div>
+
+            <div class="sos-config__body">
+                <section class="sos-config__section">
+                    <h3>GUARDIANS PROTOCOL</h3>
+                    <div class="sos-config__field">
+                        <label>Primary Contact</label>
+                        <input type="tel" id="primaryContact" placeholder="+1 (555) 019-2834" />
+                    </div>
+                    <div class="sos-config__field">
+                        <label>Secondary Contact</label>
+                        <input type="tel" id="secondaryContact" placeholder="Add phone or email" />
+                    </div>
+                </section>
+
+                <section class="sos-config__section">
+                    <div class="sos-config__section-header">
+                        <h3>MESSAGE TEMPLATE</h3>
+                        <button class="sos-config__reset" id="resetTemplate">Reset Default</button>
+                    </div>
+                    <textarea id="messageTemplate" rows="5"></textarea>
+                    <div class="sos-config__chips">
+                        <button class="sos-chip" data-insert="{{location}}">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                            Insert Location
+                        </button>
+                        <button class="sos-chip" data-insert="{{battery}}">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M22 10v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Battery Level
+                        </button>
+                        <button class="sos-chip" data-insert="{{timestamp}}">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Audio Clip
+                        </button>
+                    </div>
+                </section>
+
+                <section class="sos-config__section">
+                    <h3>AUTOMATION TRIGGERS</h3>
+                    <div class="sos-config__toggle">
+                        <div>
+                            <strong>Voice Activation 🔥</strong>
+                            <p>Auto-trigger SOS when specific phrase is detected.</p>
+                        </div>
+                        <label class="sos-toggle">
+                            <input type="checkbox" id="voiceActivation" />
+                            <span class="sos-toggle__slider"></span>
+                        </label>
+                    </div>
+                    <div class="sos-config__field" id="safeWordField" hidden>
+                        <label>SAFE WORD PHRASE</label>
+                        <input type="text" id="safeWord" placeholder="Red Protocol Delta" />
+                    </div>
+                    <div class="sos-config__toggle">
+                        <div>
+                            <strong>Live Location Beacon</strong>
+                            <p>Share real-time coordinates for 1 hour after trigger.</p>
+                        </div>
+                        <label class="sos-toggle">
+                            <input type="checkbox" id="liveBeacon" />
+                            <span class="sos-toggle__slider"></span>
+                        </label>
+                    </div>
+                </section>
+
+                <div class="sos-config__footer">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    End-to-end encrypted local configuration.<br/>NEXA SHIELD v2.4.0
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="sos-toast" id="toast" role="alert"></div>
+
+    <script src="sos.js"></script>
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="SafeNex Identity Verification – Secure onboarding powered by AI document verification." />
+  <title>SafeNex – Identity Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="onboarding.css" />
+</head>
+
+<body>
+  <!-- ░░ MOBILE TOP BAR ░░ -->
+  <header class="mobile-header">
+    <div class="brand">
+      <div class="brand__icon">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#shield-m)" />
+          <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <defs>
+            <linearGradient id="shield-m" x1="4" y1="2" x2="36" y2="41" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#2563EB" />
+              <stop offset="1" stop-color="#06B6D4" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="brand__name">SafeNex</span>
+    </div>
+    <div class="mobile-secure-badge">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" />
+      </svg>
+      SECURE
+    </div>
+  </header>
+
+  <div class="page-wrapper">
+
+
+    <!-- ░░ LEFT PANEL ░░ -->
+    <aside class="info-panel" aria-hidden="true">
+      <div class="info-panel__inner">
+        <div class="brand">
+          <div class="brand__icon">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#shield-grad)" />
+              <path d="M15 19.5l3.5 3.5 6.5-7" stroke="#fff" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="shield-grad" x1="4" y1="2" x2="36" y2="41" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#2563EB" />
+                  <stop offset="1" stop-color="#06B6D4" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="brand__name">SafeNex</span>
+        </div>
+
+        <div class="info-panel__content">
+          <!-- Mission Slides Carousel -->
+          <div class="mission-carousel" id="missionCarousel">
+            <div class="mission-slide active" data-slide="1">
+              <div class="mission-icon">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <path d="M24 4L4 14v16c0 11.05 8.16 21.4 19 24 10.84-2.6 19-12.95 19-24V14L24 4z" fill="url(#mission1)" stroke="currentColor" stroke-width="2"/>
+                  <path d="M18 24l5 5 10-10" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                  <defs>
+                    <linearGradient id="mission1" x1="4" y1="4" x2="42" y2="52">
+                      <stop stop-color="#2563EB"/>
+                      <stop offset="1" stop-color="#06B6D4"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <h2 class="mission-title">Our Mission</h2>
+              <p class="mission-text">SafeNex is dedicated to creating a safer urban environment through cutting-edge technology and community collaboration. We empower individuals with tools to protect themselves and their loved ones.</p>
+              <div class="mission-features">
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>24/7 Protection</span>
+                </div>
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Community Driven</span>
+                </div>
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 1v4m0 14v4M23 12h-4m-14 0H1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <span>AI Powered</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mission-slide" data-slide="2">
+              <div class="mission-icon mission-icon--sos">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <path d="M24 44s16-8 16-20V10L24 4 8 10v14c0 12 16 20 16 20z" stroke="url(#mission2)" stroke-width="2.5" fill="none"/>
+                  <circle cx="24" cy="20" r="6" stroke="url(#mission2)" stroke-width="2.5" fill="none"/>
+                  <path d="M24 26v8" stroke="url(#mission2)" stroke-width="2.5" stroke-linecap="round"/>
+                  <defs>
+                    <linearGradient id="mission2" x1="8" y1="4" x2="40" y2="44">
+                      <stop stop-color="#EF4444"/>
+                      <stop offset="1" stop-color="#DC2626"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <h2 class="mission-title">Nexa AI SOS</h2>
+              <p class="mission-text">Instant emergency response system with AI-powered keyword detection. Send SOS alerts with your precise location to emergency contacts via WhatsApp in under 2 seconds.</p>
+              <div class="mission-stats">
+                <div class="mission-stat">
+                  <div class="mission-stat-value">&lt;2s</div>
+                  <div class="mission-stat-label">Response Time</div>
+                </div>
+                <div class="mission-stat">
+                  <div class="mission-stat-value">GPS</div>
+                  <div class="mission-stat-label">Live Location</div>
+                </div>
+                <div class="mission-stat">
+                  <div class="mission-stat-value">AI</div>
+                  <div class="mission-stat-label">Smart Detection</div>
+                </div>
+              </div>
+              <div class="mission-keywords">
+                <span class="mission-keyword">help</span>
+                <span class="mission-keyword">emergency</span>
+                <span class="mission-keyword">danger</span>
+                <span class="mission-keyword">sos</span>
+              </div>
+            </div>
+
+            <div class="mission-slide" data-slide="3">
+              <div class="mission-icon mission-icon--trace">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <path d="M24 4C15.16 4 8 11.16 8 20c0 10.5 14 24 16 24s16-13.5 16-24c0-8.84-7.16-16-16-16z" stroke="url(#mission3)" stroke-width="2.5" fill="none"/>
+                  <circle cx="24" cy="20" r="5" stroke="url(#mission3)" stroke-width="2.5" fill="none"/>
+                  <path d="M14 36h20M18 42h12" stroke="url(#mission3)" stroke-width="2.5" stroke-linecap="round"/>
+                  <defs>
+                    <linearGradient id="mission3" x1="8" y1="4" x2="40" y2="44">
+                      <stop stop-color="#10B981"/>
+                      <stop offset="1" stop-color="#059669"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <h2 class="mission-title">Safe Trace</h2>
+              <p class="mission-text">Navigate with confidence using our AI-powered route optimization. Get the safest path to your destination based on real-time crime data, lighting conditions, and community feedback.</p>
+              <div class="mission-features">
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Real-time Crime Data</span>
+                </div>
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 1v6m0 6v6M23 12h-6m-6 0H5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <span>AI Route Optimization</span>
+                </div>
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Lighting Conditions</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mission-slide" data-slide="4">
+              <div class="mission-icon mission-icon--room">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <rect x="6" y="10" width="36" height="28" rx="3" stroke="url(#mission4)" stroke-width="2.5" fill="none"/>
+                  <path d="M6 18h36M14 10v-4M34 10v-4" stroke="url(#mission4)" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="16" cy="26" r="2" fill="url(#mission4)"/>
+                  <circle cx="24" cy="26" r="2" fill="url(#mission4)"/>
+                  <circle cx="32" cy="26" r="2" fill="url(#mission4)"/>
+                  <circle cx="16" cy="32" r="2" fill="url(#mission4)"/>
+                  <circle cx="24" cy="32" r="2" fill="url(#mission4)"/>
+                  <defs>
+                    <linearGradient id="mission4" x1="6" y1="6" x2="42" y2="38">
+                      <stop stop-color="#F59E0B"/>
+                      <stop offset="1" stop-color="#D97706"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <h2 class="mission-title">Silent Room</h2>
+              <p class="mission-text">Community-driven platform for anonymous reporting. Raise concerns, report incidents, and take collective action against safety issues in your neighborhood. Your voice matters.</p>
+              <div class="mission-features">
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 15v5m-3 0h6M12 3a9 9 0 00-9 9h18a9 9 0 00-9-9z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  <span>Anonymous Reporting</span>
+                </div>
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Community Action</span>
+                </div>
+                <div class="mission-feature-item">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="2"/>
+                  </svg>
+                  <span>Raise Concerns</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Carousel Navigation -->
+            <div class="mission-nav">
+              <button class="mission-nav-btn" data-nav="prev" aria-label="Previous slide">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <div class="mission-dots">
+                <button class="mission-dot active" data-slide="1" aria-label="Slide 1"></button>
+                <button class="mission-dot" data-slide="2" aria-label="Slide 2"></button>
+                <button class="mission-dot" data-slide="3" aria-label="Slide 3"></button>
+                <button class="mission-dot" data-slide="4" aria-label="Slide 4"></button>
+              </div>
+              <button class="mission-nav-btn" data-nav="next" aria-label="Next slide">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <h1 class="info-panel__headline">Secure Your <br /><span class="gradient-text">Digital Identity</span></h1>
+          <p class="info-panel__sub">AI-powered document verification to grant you access to the SafeNex safety
+            ecosystem.</p>
+
+          <ul class="feature-list">
+            <li class="feature-item">
+              <div class="feature-item__icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                </svg>
+              </div>
+              <div>
+                <strong>AI Document Analysis</strong>
+                <p>Gemini Vision verifies your Aadhaar or Passport in seconds</p>
+              </div>
+            </li>
+            <li class="feature-item">
+              <div class="feature-item__icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div>
+                <strong>End-to-End Encrypted</strong>
+                <p>Your documents are processed securely and never stored publicly</p>
+              </div>
+            </li>
+            <li class="feature-item">
+              <div class="feature-item__icon">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div>
+                <strong>SafeNex ID + QR Code</strong>
+                <p>Receive your unique digital identity credential on verification</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="trust-badges">
+            <span class="trust-badge">🔒 ISO 27001</span>
+            <span class="trust-badge">🛡️ ISO 27701</span>
+            <span class="trust-badge">✅ GDPR Ready</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ░░ RIGHT PANEL – FORM CARD ░░ -->
+    <main class="form-panel">
+      <div class="form-card">
+
+        <!-- ── Step Progress ── -->
+        <div class="step-progress" id="stepProgress">
+          <div class="step-progress__bar">
+            <div class="step-progress__fill" id="progressFill"></div>
+          </div>
+          <div class="step-progress__labels">
+            <span class="step-label active" id="label-1">Register</span>
+            <span class="step-label" id="label-2">Login</span>
+            <span class="step-label" id="label-3">Verify</span>
+            <span class="step-label" id="label-4">ID Card</span>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════ -->
+        <!--  STEP 1 — REGISTER               -->
+        <!-- ══════════════════════════════════ -->
+        <section class="form-step active" id="step-1" aria-label="Step 1: Register">
+          <div class="form-step__header">
+            <div class="step-badge">Step 1 of 4</div>
+            <h2>Create Account</h2>
+            <p>Register to begin your identity verification journey.</p>
+          </div>
+
+          <form id="registerForm" novalidate>
+            <div class="form-group" id="name-group">
+              <label for="regName">Full Name</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" />
+                  <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <input type="text" id="regName" name="name" placeholder="Alex J. Mercer" autocomplete="name" required />
+              </div>
+              <span class="field-error" id="nameError"></span>
+            </div>
+
+            <div class="form-group" id="email-group">
+              <label for="regEmail">Email Address</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                    stroke="currentColor" stroke-width="2" />
+                  <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <input type="email" id="regEmail" name="email" placeholder="alex@example.com" autocomplete="email"
+                  required />
+              </div>
+              <span class="field-error" id="emailError"></span>
+            </div>
+
+            <div class="form-group" id="password-group">
+              <label for="regPassword">Password</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <input type="password" id="regPassword" name="password" placeholder="Min. 8 characters"
+                  autocomplete="new-password" required />
+                <button type="button" class="toggle-password" data-target="regPassword"
+                  aria-label="Toggle password visibility">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" />
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                </button>
+              </div>
+              <span class="field-error" id="passwordError"></span>
+            </div>
+
+            <div class="form-alert form-alert--error" id="registerError" role="alert" hidden></div>
+
+            <button type="submit" class="btn btn--primary" id="registerBtn">
+              <span class="btn__text">Create Account</span>
+              <span class="btn__spinner" hidden></span>
+            </button>
+          </form>
+
+          <p class="form-switch">Already have an account? <button type="button" class="link-btn" id="goToLogin">Sign
+              in</button></p>
+        </section>
+
+        <!-- ══════════════════════════════════ -->
+        <!--  STEP 2 — LOGIN                  -->
+        <!-- ══════════════════════════════════ -->
+        <section class="form-step" id="step-2" aria-label="Step 2: Login" hidden>
+          <div class="form-step__header">
+            <div class="step-badge">Step 2 of 4</div>
+            <h2>Sign In</h2>
+            <p>Access your account to begin document verification.</p>
+          </div>
+
+          <form id="loginForm" novalidate>
+            <div class="form-group">
+              <label for="loginEmail">Email Address</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                    stroke="currentColor" stroke-width="2" />
+                  <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <input type="email" id="loginEmail" name="email" placeholder="alex@example.com" autocomplete="email"
+                  required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <div class="input-wrapper">
+                <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+                  <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+                <input type="password" id="loginPassword" name="password" placeholder="Your password"
+                  autocomplete="current-password" required />
+                <button type="button" class="toggle-password" data-target="loginPassword"
+                  aria-label="Toggle password visibility">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" />
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-alert form-alert--error" id="loginError" role="alert" hidden></div>
+
+            <button type="submit" class="btn btn--primary" id="loginBtn">
+              <span class="btn__text">Sign In</span>
+              <span class="btn__spinner" hidden></span>
+            </button>
+          </form>
+
+          <p class="form-switch">Don't have an account? <button type="button" class="link-btn"
+              id="goToRegister">Register</button></p>
+        </section>
+
+        <!-- ══════════════════════════════════ -->
+        <!--  STEP 3 — DOCUMENT UPLOAD        -->
+        <!-- ══════════════════════════════════ -->
+        <section class="form-step" id="step-3" aria-label="Step 3: Document Upload" hidden>
+          <div class="form-step__header">
+            <div class="step-badge">Step 3 of 4</div>
+            <h2>Upload Government ID</h2>
+            <p>Select your document type and upload a clear photo. Ensure all corners are visible.</p>
+          </div>
+
+          <!-- Document Type Selector -->
+          <div class="doc-type-selector">
+            <button type="button" class="doc-type-card active" id="docAadhaar" data-type="aadhaar">
+              <div class="doc-type-card__icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <rect x="4" y="8" width="32" height="24" rx="3" stroke="currentColor" stroke-width="2" />
+                  <circle cx="14" cy="20" r="5" stroke="currentColor" stroke-width="2" />
+                  <path d="M22 17h8M22 20h6M22 23h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div>
+                <strong>Local Citizen</strong>
+                <span>National ID (Aadhaar)</span>
+                <em>Recommended for residents</em>
+              </div>
+              <div class="doc-type-card__check">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </div>
+            </button>
+
+            <button type="button" class="doc-type-card" id="docPassport" data-type="passport">
+              <div class="doc-type-card__icon">
+                <svg viewBox="0 0 40 40" fill="none">
+                  <rect x="8" y="4" width="24" height="32" rx="3" stroke="currentColor" stroke-width="2" />
+                  <circle cx="20" cy="18" r="6" stroke="currentColor" stroke-width="2" />
+                  <path d="M12 30h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <path d="M14 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div>
+                <strong>International Visitor</strong>
+                <span>Passport</span>
+                <em>Required for non-residents</em>
+              </div>
+              <div class="doc-type-card__check">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </div>
+            </button>
+          </div>
+
+          <!-- Upload Zone -->
+          <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="Click to upload document">
+            <div class="upload-zone__inner">
+              <div class="upload-zone__icon">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <path d="M24 32V16M24 16l-6 6M24 16l6 6" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M8 32v4a4 4 0 004 4h24a4 4 0 004-4v-4" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" />
+                </svg>
+              </div>
+              <p class="upload-zone__title">Tap to browse or drag &amp; drop</p>
+              <p class="upload-zone__hint">Supports JPG, PNG, PDF (Max 10MB)</p>
+              <button type="button" class="btn btn--outline" id="chooseFileBtn">Choose File</button>
+            </div>
+            <input type="file" id="documentFile" accept=".jpg,.jpeg,.png,.pdf" hidden
+              aria-label="Document file input" />
+          </div>
+
+          <!-- File Preview -->
+          <div class="file-preview" id="filePreview" hidden>
+            <div class="file-preview__icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" stroke="currentColor"
+                  stroke-width="2" />
+                <polyline points="13 2 13 9 20 9" stroke="currentColor" stroke-width="2" />
+              </svg>
+            </div>
+            <div class="file-preview__info">
+              <span class="file-preview__name" id="previewName">—</span>
+              <span class="file-preview__size" id="previewSize">—</span>
+              <div class="file-preview__bar">
+                <div class="file-preview__bar-fill" id="previewBarFill"></div>
+              </div>
+            </div>
+            <button type="button" class="file-preview__remove" id="removeFile" aria-label="Remove file">
+              <svg viewBox="0 0 24 24" fill="none">
+                <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="security-notice">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" />
+            </svg>
+            <span>Your data is processed securely with end-to-end encryption.</span>
+          </div>
+
+          <div class="form-alert form-alert--error" id="uploadError" role="alert" hidden></div>
+
+          <button type="button" class="btn btn--primary" id="submitVerifyBtn" disabled>
+            <span class="btn__text">Submit for Verification</span>
+            <span class="btn__spinner" hidden></span>
+          </button>
+
+          <p class="form-footer-link"><a href="#" id="needHelp">Need help?</a></p>
+        </section>
+
+        <!-- ══════════════════════════════════ -->
+        <!--  STEP 3b — AI PROCESSING         -->
+        <!-- ══════════════════════════════════ -->
+        <section class="form-step" id="step-processing" aria-label="AI Verification Processing" hidden>
+          <div class="processing-header">
+            <h2>Verifying Identity</h2>
+            <p>Our AI is analyzing your document to ensure maximum security.</p>
+          </div>
+
+          <div class="ai-orb">
+            <div class="ai-orb__ring ai-orb__ring--1"></div>
+            <div class="ai-orb__ring ai-orb__ring--2"></div>
+            <div class="ai-orb__ring ai-orb__ring--3"></div>
+            <div class="ai-orb__core">
+              <svg viewBox="0 0 40 40" fill="none">
+                <rect x="8" y="6" width="24" height="28" rx="3" stroke="currentColor" stroke-width="2" />
+                <path d="M14 14h12M14 19h12M14 24h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="29" cy="29" r="7" fill="#0A0F1E" stroke="#2563EB" stroke-width="2" />
+                <path d="M26 29l2 2 4-4" stroke="#2563EB" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+            <div class="ai-orb__label">SAFENEX AI V2.4 <span>PREMIUM</span></div>
+          </div>
+
+          <ul class="check-steps" id="checkSteps">
+            <li class="check-step" id="cs-1" data-state="pending">
+              <div class="check-step__icon">
+                <div class="cs-spinner"></div>
+              </div>
+              <div class="check-step__text">
+                <strong>Extracting data</strong>
+                <span>Reading document metadata and structure</span>
+              </div>
+            </li>
+            <li class="check-step" id="cs-2" data-state="pending">
+              <div class="check-step__icon">
+                <div class="cs-spinner"></div>
+              </div>
+              <div class="check-step__text">
+                <strong>Validating format</strong>
+                <span>Checking document structure and patterns</span>
+              </div>
+            </li>
+            <li class="check-step" id="cs-3" data-state="pending">
+              <div class="check-step__icon">
+                <div class="cs-spinner"></div>
+              </div>
+              <div class="check-step__text">
+                <strong>Authenticity pattern analysis</strong>
+                <span>Analyzing security identifiers via Gemini AI</span>
+              </div>
+            </li>
+            <li class="check-step" id="cs-4" data-state="pending">
+              <div class="check-step__icon">
+                <div class="cs-spinner"></div>
+              </div>
+              <div class="check-step__text">
+                <strong>Generating SafeNex ID</strong>
+                <span>Creating your unique identity credential</span>
+              </div>
+            </li>
+          </ul>
+
+          <div class="processing-notice">
+            <svg viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span>This process usually takes less than 30 seconds. Please do not close this page.</span>
+          </div>
+
+          <div class="processing-footer">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" />
+            </svg>
+            LIVE ENCRYPTION ACTIVE — SECURED BY SAFENEX AI
+          </div>
+        </section>
+
+        <!-- ══════════════════════════════════ -->
+        <!--  STEP 4 — DIGITAL ID CARD        -->
+        <!-- ══════════════════════════════════ -->
+        <section class="form-step" id="step-4" aria-label="Step 4: Digital Safety ID" hidden>
+          <div class="verified-header">
+            <div class="verified-badge-icon">
+              <svg viewBox="0 0 80 80" fill="none">
+                <circle cx="40" cy="40" r="38" stroke="url(#vg)" stroke-width="3" />
+                <path d="M26 40l10 10 18-20" stroke="#22C55E" stroke-width="4" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <defs>
+                  <linearGradient id="vg" x1="2" y1="2" x2="78" y2="78" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#22C55E" />
+                    <stop offset="1" stop-color="#16A34A" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+            <div class="verified-badge-label">✅ SAFENEX VERIFIED</div>
+            <h2>Identity Verified</h2>
+            <p>Your document has been authenticated by SafeNex AI Engine.</p>
+          </div>
+
+          <!-- Digital ID Card -->
+          <div class="id-card">
+            <div class="id-card__header">
+              <div class="id-card__header-brand">
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path d="M10 1L2 4.5V10C2 14.7 5.4 19.1 10 20c4.6-.9 8-5.3 8-10V4.5L10 1z" fill="url(#cg)" />
+                  <path d="M7 10l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <defs>
+                    <linearGradient id="cg" x1="2" y1="1" x2="18" y2="21" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#2563EB" />
+                      <stop offset="1" stop-color="#06B6D4" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <span>SAFENEX OFFICIAL CREDENTIAL</span>
+              </div>
+            </div>
+
+            <div class="id-card__body">
+              <div class="id-card__info-row">
+                <div class="id-card__field">
+                  <span class="id-card__field-label">FULL NAME</span>
+                  <span class="id-card__field-value" id="cardName">—</span>
+                </div>
+                <div class="id-card__field">
+                  <span class="id-card__field-label">DOCUMENT TYPE</span>
+                  <span class="id-card__field-value" id="cardDocType">—</span>
+                </div>
+              </div>
+
+              <div class="id-card__snx-row">
+                <div class="id-card__field">
+                  <span class="id-card__field-label">SAFENEX ID</span>
+                  <span class="id-card__field-value id-card__field-value--highlight" id="cardSafeNexID">—</span>
+                </div>
+                <div class="id-card__field">
+                  <span class="id-card__field-label">VERIFIED AT</span>
+                  <span class="id-card__field-value" id="cardVerifiedAt">—</span>
+                </div>
+              </div>
+
+              <div class="id-card__qr">
+                <img id="qrImage" src="" alt="SafeNex QR Code" />
+                <p class="id-card__qr-label">Scan to verify identity</p>
+              </div>
+
+              <div class="id-card__secure">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+                <div>
+                  <span>Processed by SafeNex AI Engine</span>
+                  <em>End-to-End Encrypted · SECURE-ENCLAVE-V2</em>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Verified Info Summary -->
+          <div class="verified-info-card">
+            <div class="verified-info-card__header">
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2" />
+                <path d="M2 10h20" stroke="currentColor" stroke-width="2" />
+              </svg>
+              Verified Information
+            </div>
+            <div class="verified-info-row">
+              <div class="vi-label">FULL NAME</div>
+              <div class="vi-value" id="viName">—</div>
+              <div class="vi-check"><svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg></div>
+            </div>
+            <div class="verified-info-row">
+              <div class="vi-label">DOCUMENT TYPE</div>
+              <div class="vi-value" id="viDocType">—</div>
+              <div class="vi-check"><svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg></div>
+            </div>
+            <div class="verified-info-row">
+              <div class="vi-label">DOCUMENT NUMBER</div>
+              <div class="vi-value" id="viDocNumber">—</div>
+              <div class="vi-check"><svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg></div>
+            </div>
+            <div class="verified-info-row">
+              <div class="vi-label">VERIFIED AT</div>
+              <div class="vi-value" id="viVerifiedAt">—</div>
+              <div class="vi-check"><svg viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#22C55E" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg></div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn--primary btn--dashboard" id="enterDashboardBtn">
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+              <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2" />
+            </svg>
+            Enter Dashboard
+          </button>
+
+          <div class="id-card-actions">
+            <button type="button" class="btn btn--ghost" id="shareIDBtn">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2" />
+                <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                <circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2" />
+                <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke="currentColor" stroke-width="2" />
+              </svg>
+              Share ID
+            </button>
+            <button type="button" class="btn btn--ghost" id="downloadQRBtn">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Download QR
+            </button>
+          </div>
+
+          <p class="privacy-link"><a href="#">Privacy Policy &amp; Terms</a></p>
+        </section>
+
+        <!-- ══════════════════════════════════ -->
+        <!--  ERROR STATE                      -->
+        <!-- ══════════════════════════════════ -->
+        <section class="form-step" id="step-error" aria-label="Verification Failed" hidden>
+          <div class="error-state">
+            <div class="error-state__icon">
+              <svg viewBox="0 0 80 80" fill="none">
+                <circle cx="40" cy="40" r="38" stroke="#EF4444" stroke-width="3" />
+                <path d="M28 28l24 24M52 28L28 52" stroke="#EF4444" stroke-width="4" stroke-linecap="round" />
+              </svg>
+            </div>
+            <h2>Verification Failed</h2>
+            <p id="errorReason">Document could not be verified. Please ensure you have uploaded a clear, valid document.
+            </p>
+            <div class="error-details" id="errorDetails" hidden></div>
+            <button type="button" class="btn btn--primary" id="retryBtn">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+                <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Try Again
+            </button>
+          </div>
+        </section>
+
+      </div><!-- /.form-card -->
+    </main>
+  </div><!-- /.page-wrapper -->
+
+  <script src="onboarding.js"></script>
+</body>
+
+</html>

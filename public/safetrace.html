@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#8B5CF6">
+    <title>SafeTrace - Risk-Aware Navigation | SafeNex</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin="" />
+    <link rel="stylesheet" href="safetrace.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <a href="/dashboard" class="logo">
+                <svg viewBox="0 0 40 40" fill="none">
+                    <path d="M20 2L4 9v12c0 9.4 6.8 18.2 16 20 9.2-1.8 16-10.6 16-20V9L20 2z" fill="url(#gradient)"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="4" y1="2" x2="36" y2="41">
+                            <stop stop-color="#8B5CF6"/><stop offset="1" stop-color="#06B6D4"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                SafeTrace
+            </a>
+            <button class="btn-icon" id="menuBtn">
+                <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Navigation</h2>
+                <button class="btn-icon" id="closeSidebar">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Destination Input -->
+            <div class="input-section">
+                <div class="input-group">
+                    <label>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Starting Point
+                    </label>
+                    <div class="input-with-button">
+                        <input type="text" id="startInput" placeholder="Enter start location or use GPS...">
+                        <button class="btn-location" id="useLocationBtn" title="Use my current location">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2v4m0 12v4M4 12h4m8 0h4" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <small class="input-hint" id="locationStatus">Click button to use GPS or type address</small>
+                </div>
+
+                <div class="input-group">
+                    <label>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M9 11a3 3 0 106 0 3 3 0 00-6 0z" stroke="currentColor" stroke-width="2"/>
+                            <path d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Destination
+                    </label>
+                    <input type="text" id="destInput" placeholder="Enter destination address...">
+                </div>
+
+                <div class="input-group">
+                    <label>
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Travel Mode
+                    </label>
+                    <div class="travel-mode-selector">
+                        <button class="travel-mode-btn" data-mode="foot-walking" title="Walking">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M13 3a3 3 0 100 6 3 3 0 000-6zM4 13l3-3 3 3m-3-3v10m6-6l3-3 3 3m-3-3v10" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Walk</span>
+                        </button>
+                        <button class="travel-mode-btn" data-mode="cycling-regular" title="Cycling">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="6" cy="19" r="3" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2"/>
+                                <path d="M10 19h4M12 15l-3-3 2-3h4l3 3-2 3" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Bike</span>
+                        </button>
+                        <button class="travel-mode-btn" data-mode="driving-car" title="Driving">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m-4 0H3m6 0h6m0 0a2 2 0 104 0m-4 0a2 2 0 114 0m0 0h2M7 7l1.5-3h7L17 7m-10 0h10M7 7v4m10-4v4M7 11h10" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Car</span>
+                        </button>
+                    </div>
+                    <small class="input-hint" id="travelModeHint">Walking mode selected</small>
+                </div>
+
+                <button class="btn-primary" id="findRoutesBtn">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Find Safe Routes
+                </button>
+            </div>
+
+            <!-- Route Options -->
+            <div class="routes-section" id="routesSection" style="display: none;">
+                <div class="section-header">
+                    <h3>Route Options</h3>
+                    <span class="route-count" id="routeCount">0 routes</span>
+                </div>
+                <div class="routes-list" id="routesList"></div>
+            </div>
+
+            <!-- Risk Legend -->
+            <div class="legend-section">
+                <h3>Risk Levels</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-dot safe"></span>
+                        <span>Safe</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot low"></span>
+                        <span>Low Risk</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot medium"></span>
+                        <span>Medium Risk</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot high"></span>
+                        <span>High Risk</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot critical"></span>
+                        <span>Critical Risk</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Theme Toggle -->
+            <div class="theme-section">
+                <h3>Map Theme</h3>
+                <div class="theme-toggle-container">
+                    <button class="theme-toggle-btn active" id="brightThemeBtn" data-theme="bright">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 1v6m0 6v6M23 12h-6m-6 0H1" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span>Bright</span>
+                    </button>
+                    <button class="theme-toggle-btn" id="darkThemeBtn" data-theme="dark">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span>Dark</span>
+                    </button>
+                </div>
+                <small class="theme-hint">Choose your preferred map style</small>
+            </div>
+
+            <!-- Route History -->
+            <div class="history-section">
+                <h3>Recent Routes</h3>
+                <div class="history-list" id="historyList">
+                    <p class="empty-state">No recent routes</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Map Container -->
+        <main class="map-container">
+            <div id="map">
+                <div class="map-loading" id="mapLoading">
+                    <div class="spinner"></div>
+                    <p>Loading map...</p>
+                </div>
+            </div>
+
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="control-btn" id="locateBtn" title="Center on my location">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+                <button class="control-btn" id="reportBtn" title="Report danger zone">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v4M12 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Intelligence Panel -->
+            <div class="intelligence-panel" id="intelligencePanel" style="display: none;">
+                <div class="panel-header">
+                    <h3>Route Intelligence</h3>
+                    <button class="btn-icon" id="closePanel">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="panel-content" id="panelContent"></div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing routes...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal" id="reportModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Report Danger Zone</h3>
+                <button class="btn-icon" id="closeReportModal">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Severity</label>
+                    <select id="reportSeverity">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="reportCategory">
+                        <option value="crime">Crime</option>
+                        <option value="theft">Theft</option>
+                        <option value="harassment">Harassment</option>
+                        <option value="assault">Assault</option>
+                        <option value="accident">Accident</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Description</label>
+                    <textarea id="reportDescription" rows="3" placeholder="Describe the danger..."></textarea>
+                </div>
+                <button class="btn-primary" id="submitReportBtn">Submit Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone Alert Modal -->
+    <div class="modal danger-zone-alert-modal" id="dangerZoneAlertModal" style="display: none;">
+        <div class="modal-content danger-zone-alert-content">
+            <div class="danger-zone-alert-header">
+                <div class="danger-zone-alert-icon">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="danger-zone-alert-title">
+                    <h3 id="dangerZoneAlertTitle">⚠️ Danger Zone Alert</h3>
+                    <p id="dangerZoneAlertSubtitle">You are approaching a high-risk area</p>
+                </div>
+                <button class="btn-icon danger-zone-close" id="closeDangerZoneAlert">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="danger-zone-alert-body">
+                <div class="danger-zone-info-grid">
+                    <div class="danger-zone-info-item">
+                        <div class="danger-zone-info-label">Location</div>
+                        <div class="danger-zone-info-value" id="dangerZoneName">-</div>
+                    </div>
+                    <div class="danger-zone-info-item">
+                        <div class="danger-zone-info-label">Risk Level</div>
+                        <div class="danger-zone-info-value">
+                            <span class="risk-badge" id="dangerZoneRiskBadge">-</span>
+                        </div>
+                    </div>
+                    <div class="danger-zone-info-item">
+                        <div class="danger-zone-info-label">Category</div>
+                        <div class="danger-zone-info-value" id="dangerZoneCategory">-</div>
+                    </div>
+                    <div class="danger-zone-info-item">
+                        <div class="danger-zone-info-label">Distance</div>
+                        <div class="danger-zone-info-value" id="dangerZoneDistance">-</div>
+                    </div>
+                </div>
+                
+                <div class="danger-zone-description">
+                    <h4>⚠️ Safety Information</h4>
+                    <p id="dangerZoneDescription">-</p>
+                </div>
+
+                <div class="danger-zone-active-hours">
+                    <h4>🕐 Active Hours</h4>
+                    <p id="dangerZoneActiveHours">-</p>
+                </div>
+
+                <div class="danger-zone-recommendations">
+                    <h4>🛡️ Safety Recommendations</h4>
+                    <ul id="dangerZoneRecommendations">
+                        <li>Stay alert and aware of your surroundings</li>
+                        <li>Avoid isolated areas and stay in well-lit places</li>
+                        <li>Keep your phone charged and accessible</li>
+                        <li>Consider taking an alternative route</li>
+                    </ul>
+                </div>
+
+                <div class="danger-zone-actions">
+                    <button class="btn-secondary" id="viewAlternativeRoute">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Find Safer Route
+                    </button>
+                    <button class="btn-primary" id="continueAnyway">
+                        Continue Anyway
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="safetrace.js"></script>
+</body>
+</html>
