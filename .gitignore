@@ -146,3 +146,11 @@ uploads/
 qrcodes/
 .DS_Store
 Thumbs.db
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+functions/node_modules/
+functions/.runtimeconfig.json
+.runtimeconfig.json

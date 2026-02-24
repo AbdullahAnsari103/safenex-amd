@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "voyageai-7t9x7"
+  },
+  "targets": {
+    "voyageai-7t9x7": {
+      "hosting": {
+        "safenex-s": [
+          "safenex-s"
+        ]
+      }
+    }
+  }
+}
