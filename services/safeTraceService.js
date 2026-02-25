@@ -170,7 +170,7 @@ async function geocodeAddress(address) {
             // Mumbai center coordinates for distance validation
             const MUMBAI_CENTER_LAT = 19.0760;
             const MUMBAI_CENTER_LNG = 72.8777;
-            const MAX_DISTANCE_FROM_MUMBAI = 100000; // 100km radius from Mumbai center
+            const MAX_DISTANCE_FROM_MUMBAI = 50000; // 50km radius from Mumbai center (tighter restriction)
             
             // Filter and score results
             const scoredResults = response.data.map(loc => {
@@ -182,6 +182,14 @@ async function geocodeAddress(address) {
                 const distanceFromMumbai = calculateDistance(lat, lng, MUMBAI_CENTER_LAT, MUMBAI_CENTER_LNG);
                 
                 let score = 0;
+                
+                // Reject results that mention other cities
+                const otherCities = ['pune', 'thane', 'navi mumbai', 'kalyan', 'nashik', 'nagpur'];
+                const mentionsOtherCity = otherCities.some(city => displayName.includes(city) && !displayName.includes('mumbai'));
+                
+                if (mentionsOtherCity) {
+                    score -= 10000; // Heavy penalty for other cities
+                }
                 
                 // Highest priority: Results within Mumbai bounding box
                 if (lat >= 18.8 && lat <= 19.3 && lng >= 72.7 && lng <= 73.1) {
@@ -231,6 +239,7 @@ async function geocodeAddress(address) {
             // Validate: Reject if too far from Mumbai (likely wrong location)
             if (bestResult.distanceFromMumbai > MAX_DISTANCE_FROM_MUMBAI) {
                 console.warn(`Best result is ${(bestResult.distanceFromMumbai/1000).toFixed(1)}km from Mumbai, likely incorrect`);
+                console.warn(`Result address: ${bestResult.display_name}`);
                 
                 // Try to find a closer alternative
                 const closerResult = scoredResults.find(loc => loc.distanceFromMumbai <= MAX_DISTANCE_FROM_MUMBAI);
@@ -250,7 +259,11 @@ async function geocodeAddress(address) {
                     
                     return result;
                 } else {
-                    throw new Error(`Location "${address}" appears to be outside the Mumbai area. Please verify the address or try a different search term.`);
+                    // Extract city name from best result for better error message
+                    const cityMatch = bestResult.display_name.match(/(Pune|Thane|Navi Mumbai|Kalyan|Nashik|Nagpur)/i);
+                    const cityName = cityMatch ? cityMatch[1] : 'another city';
+                    
+                    throw new Error(`The location "${address}" was found in ${cityName} (${(bestResult.distanceFromMumbai/1000).toFixed(0)}km away). SafeTrace currently only supports locations within Mumbai. Please search for a location in Mumbai.`);
                 }
             }
             
@@ -260,7 +273,12 @@ async function geocodeAddress(address) {
                 address: bestResult.display_name
             };
 
-            console.log('Selected geocoding result:', result);
+            console.log('Selected geocoding result:', {
+                address: result.address,
+                latitude: result.latitude,
+                longitude: result.longitude,
+                distanceFromMumbai: (bestResult.distanceFromMumbai / 1000).toFixed(1) + 'km'
+            });
 
             // Cache result
             geocodeCache.set(cacheKey, {
