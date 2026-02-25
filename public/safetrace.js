@@ -178,7 +178,7 @@ function toggleMapTheme(theme) {
     showNotification(`Map theme changed to ${theme}`, 'success');
 }
 
-// Start Location Tracking
+// Start Location Tracking with Progressive Enhancement
 function startLocationTracking() {
     if (!navigator.geolocation) {
         showNotification('Geolocation is not supported by your browser', 'error');
@@ -188,36 +188,90 @@ function startLocationTracking() {
 
     updateLocationStatus('Getting your location...', 'info');
 
-    // Get initial position with longer timeout
+    // Strategy: Try fast location first, then high accuracy if needed
+    let locationAcquired = false;
+
+    // Step 1: Quick location with cached position (fast but less accurate)
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            if (!locationAcquired) {
+                locationAcquired = true;
+                updateUserLocation(position);
+                updateLocationStatus('GPS location active', 'success');
+                console.log('Quick location acquired:', position.coords.accuracy, 'meters accuracy');
+                
+                // Start watching for better accuracy in background
+                startHighAccuracyWatch();
+            }
+        },
+        (error) => {
+            console.warn('Quick location failed, trying high accuracy...', error);
+            // Step 2: If quick fails, try high accuracy
+            tryHighAccuracyLocation();
+        },
+        {
+            enableHighAccuracy: false, // Fast but less accurate
+            timeout: 5000, // Only wait 5 seconds for quick location
+            maximumAge: 30000 // Accept cached location up to 30 seconds old
+        }
+    );
+
+    // Fallback timeout: If no location after 8 seconds, try high accuracy
+    setTimeout(() => {
+        if (!locationAcquired) {
+            console.log('Quick location timeout, trying high accuracy...');
+            tryHighAccuracyLocation();
+        }
+    }, 8000);
+}
+
+// Try High Accuracy Location (slower but more precise)
+function tryHighAccuracyLocation() {
     navigator.geolocation.getCurrentPosition(
         (position) => {
             updateUserLocation(position);
-            updateLocationStatus('GPS location active', 'success');
+            updateLocationStatus('GPS location active (high accuracy)', 'success');
+            console.log('High accuracy location acquired:', position.coords.accuracy, 'meters accuracy');
+            
+            // Start watching for continuous updates
+            startHighAccuracyWatch();
         },
         (error) => {
-            console.error('Geolocation error:', error);
+            console.error('High accuracy location error:', error);
             handleGeolocationError(error);
         },
         {
             enableHighAccuracy: true,
-            timeout: 30000, // Increased to 30 seconds
-            maximumAge: 0
+            timeout: 15000, // 15 seconds for high accuracy
+            maximumAge: 5000 // Accept recent cached location
         }
     );
+}
 
-    // Watch position with controlled updates
+// Start High Accuracy Watch (for continuous tracking)
+function startHighAccuracyWatch() {
+    // Clear existing watch if any
+    if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+    }
+
+    // Watch position with optimized settings
     watchId = navigator.geolocation.watchPosition(
         (position) => {
             updateUserLocation(position);
+            // Only log significant accuracy improvements
+            if (position.coords.accuracy < 50) {
+                console.log('Location updated with', position.coords.accuracy, 'meters accuracy');
+            }
         },
         (error) => {
-            console.error('Geolocation watch error:', error);
+            console.warn('Geolocation watch error:', error);
             // Don't show error for watch position, just log it
         },
         {
             enableHighAccuracy: true,
-            timeout: 30000, // Increased to 30 seconds
-            maximumAge: 10000 // Allow 10 second old positions
+            timeout: 20000,
+            maximumAge: 10000 // Allow 10 second old positions for smooth tracking
         }
     );
 }
@@ -257,7 +311,7 @@ function updateLocationStatus(message, type = 'info') {
     }
 }
 
-// Use My Location Button Handler
+// Use My Location Button Handler with Progressive Enhancement
 function useMyLocation() {
     const btn = document.getElementById('useLocationBtn');
     const startInput = document.getElementById('startInput');
@@ -275,56 +329,98 @@ function useMyLocation() {
     startInput.value = 'Getting location...';
     startInput.disabled = true;
 
+    let locationAcquired = false;
+
+    // Success handler
+    const handleLocationSuccess = (position) => {
+        if (locationAcquired) return; // Prevent duplicate handling
+        locationAcquired = true;
+
+        const { latitude, longitude, heading, accuracy } = position.coords;
+        currentPosition = { latitude, longitude };
+        usingGPS = true;
+        manualStartLocation = null;
+        
+        // Store heading if available
+        if (heading !== null && heading !== undefined) {
+            currentHeading = heading;
+        }
+
+        // Update input
+        startInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        startInput.disabled = false;
+        
+        // Update marker with directional arrow
+        if (!userMarker) {
+            createDirectionalMarker(latitude, longitude, heading, accuracy);
+            map.setView([latitude, longitude], 15);
+        } else {
+            updateDirectionalMarker(latitude, longitude, heading, accuracy);
+            map.setView([latitude, longitude], 15);
+        }
+
+        // Remove loading state
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        updateLocationStatus('GPS location active', 'success');
+        showNotification('Location acquired successfully', 'success');
+
+        // Start watching position if not already watching
+        if (!watchId) {
+            startHighAccuracyWatch();
+        }
+    };
+
+    // Error handler
+    const handleLocationError = (error) => {
+        if (locationAcquired) return; // Already got location
+        
+        console.error('Geolocation error:', error);
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        startInput.value = '';
+        startInput.disabled = false;
+        handleGeolocationError(error);
+    };
+
+    // Step 1: Try quick location first (fast)
     navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const { latitude, longitude, heading, accuracy } = position.coords;
-            currentPosition = { latitude, longitude };
-            usingGPS = true;
-            manualStartLocation = null;
-            
-            // Store heading if available
-            if (heading !== null && heading !== undefined) {
-                currentHeading = heading;
-            }
-
-            // Update input
-            startInput.value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-            startInput.disabled = false;
-            
-            // Update marker with directional arrow
-            if (!userMarker) {
-                createDirectionalMarker(latitude, longitude, heading, accuracy);
-                map.setView([latitude, longitude], 15);
-            } else {
-                updateDirectionalMarker(latitude, longitude, heading, accuracy);
-                map.setView([latitude, longitude], 15);
-            }
-
-            // Remove loading state
-            btn.classList.remove('loading');
-            btn.disabled = false;
-            updateLocationStatus('GPS location active', 'success');
-            showNotification('Location acquired successfully', 'success');
-
-            // Start watching position
-            if (!watchId) {
-                startLocationTracking();
-            }
-        },
+        handleLocationSuccess,
         (error) => {
-            console.error('Geolocation error:', error);
-            btn.classList.remove('loading');
-            btn.disabled = false;
-            startInput.value = '';
-            startInput.disabled = false;
-            handleGeolocationError(error);
+            console.warn('Quick location failed, trying high accuracy...', error);
+            // Step 2: Try high accuracy if quick fails
+            navigator.geolocation.getCurrentPosition(
+                handleLocationSuccess,
+                handleLocationError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 5000
+                }
+            );
         },
         {
-            enableHighAccuracy: true,
-            timeout: 30000, // Increased to 30 seconds
-            maximumAge: 0
+            enableHighAccuracy: false,
+            timeout: 5000,
+            maximumAge: 30000
         }
     );
+
+    // Fallback: If no location after 8 seconds, try high accuracy
+    setTimeout(() => {
+        if (!locationAcquired) {
+            console.log('Location timeout, trying high accuracy fallback...');
+            navigator.geolocation.getCurrentPosition(
+                handleLocationSuccess,
+                handleLocationError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 5000
+                }
+            );
+        }
+    }, 8000);
 }
 
 // Update User Location
