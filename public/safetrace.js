@@ -306,25 +306,36 @@ function startHighAccuracyWatch() {
         navigator.geolocation.clearWatch(watchId);
     }
 
-    // Watch position with optimized settings
+    console.log('[GPS] Starting continuous location tracking...');
+
+    // Watch position with optimized settings for real-time tracking
     watchId = navigator.geolocation.watchPosition(
         (position) => {
             updateUserLocation(position);
-            // Only log significant accuracy improvements
+            // Log significant updates
             if (position.coords.accuracy < 50) {
-                console.log('Location updated with', position.coords.accuracy, 'meters accuracy');
+                console.log('[GPS] High accuracy update:', Math.round(position.coords.accuracy), 'meters');
             }
         },
         (error) => {
-            console.warn('Geolocation watch error:', error);
+            console.warn('[GPS] Watch error:', error.message);
             // Don't show error for watch position, just log it
+            // Try to restart watch after error
+            setTimeout(() => {
+                if (!watchId) {
+                    console.log('[GPS] Restarting watch after error...');
+                    startHighAccuracyWatch();
+                }
+            }, 5000);
         },
         {
             enableHighAccuracy: true,
-            timeout: 20000,
-            maximumAge: 10000 // Allow 10 second old positions for smooth tracking
+            timeout: 15000, // Reduced from 20s for faster updates
+            maximumAge: 5000 // Reduced from 10s for fresher positions
         }
     );
+    
+    console.log('[GPS] Watch started with ID:', watchId);
 }
 
 // Handle Geolocation Errors
@@ -479,6 +490,14 @@ function updateUserLocation(position) {
     const { latitude, longitude, heading, accuracy } = position.coords;
     currentPosition = { latitude, longitude };
     
+    console.log('[Location Update]', {
+        lat: latitude.toFixed(6),
+        lng: longitude.toFixed(6),
+        accuracy: Math.round(accuracy) + 'm',
+        heading: heading,
+        isNavigating: isNavigating
+    });
+    
     // Update heading if available (from device compass)
     if (heading !== null && heading !== undefined) {
         currentHeading = heading;
@@ -493,12 +512,20 @@ function updateUserLocation(position) {
     if (!userMarker) {
         createDirectionalMarker(latitude, longitude, currentHeading, accuracy);
         
-        // Only center map if using GPS
-        if (usingGPS) {
+        // Center map on user location
+        if (map) {
             map.setView([latitude, longitude], 15);
         }
     } else {
         updateDirectionalMarker(latitude, longitude, currentHeading, accuracy);
+        
+        // If navigating, keep user centered on map
+        if (isNavigating) {
+            map.panTo([latitude, longitude], {
+                animate: true,
+                duration: 0.5
+            });
+        }
     }
 
     // Check for deviation if navigating
@@ -1738,6 +1765,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadRouteHistory();
     loadAllDangerZones(); // Load verified danger zones on map
     setupLocationAutocomplete();
+    
+    // Start location tracking automatically
+    console.log('Starting automatic location tracking...');
+    requestUserLocation();
     
     // Mobile-specific enhancements
     if (window.innerWidth <= 768) {
