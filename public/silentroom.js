@@ -48,7 +48,23 @@ const commentsPostPreview = document.getElementById('commentsPostPreview');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
-    initSocket();
+    
+    // Wait for Socket.IO to load before initializing
+    if (typeof io !== 'undefined') {
+        initSocket();
+    } else {
+        console.warn('Socket.IO not loaded yet, waiting...');
+        // Wait and retry
+        setTimeout(() => {
+            if (typeof io !== 'undefined') {
+                initSocket();
+            } else {
+                console.error('Socket.IO failed to load. Real-time features disabled.');
+                showToast('Real-time features unavailable. Please refresh the page.', 'error');
+            }
+        }, 2000);
+    }
+    
     loadFeed();
     loadTrending();
     initEventListeners();
@@ -57,6 +73,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Initialize Socket.IO
 function initSocket() {
+    if (typeof io === 'undefined') {
+        console.error('Socket.IO library not loaded');
+        return;
+    }
+    
     socket = io({
         transports: ['websocket', 'polling'],
         reconnection: true,
