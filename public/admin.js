@@ -692,6 +692,13 @@ async function loadComplaints() {
                 </div>
 
                 <div class="complaint-actions">
+                    <button class="btn-action btn-view-details" onclick="viewComplaintDetails('${post.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        View Details
+                    </button>
                     ${!post.adminResponse ? `
                     <button class="btn-action btn-respond" onclick="openAdminResponse('${post.id}')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -813,6 +820,13 @@ async function loadCommunityPosts() {
                 </div>
 
                 <div class="post-card-actions">
+                    <button class="btn-action btn-view-details" onclick="viewPostDetails('${post.id}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        View Details
+                    </button>
                     <button class="btn-action btn-warn" onclick="warnUser('${post.id}', '${post.userId}')">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -2311,4 +2325,217 @@ function filterCommunityPosts(filter) {
     // All posts are always shown, just sorted differently
     
     loadCommunityPosts();
+}
+
+// View Complaint Details Modal
+async function viewComplaintDetails(postId) {
+    try {
+        const response = await apiCall(`/admin/silent-room/reports?page=1&limit=1000`);
+        const complaint = response.data.reports.find(p => p.id === postId);
+        
+        if (!complaint) {
+            alert('Complaint not found');
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'details-modal-overlay';
+        modal.innerHTML = `
+            <div class="details-modal">
+                <div class="details-modal-header">
+                    <h2>Complaint Details</h2>
+                    <button class="details-modal-close" onclick="this.closest('.details-modal-overlay').remove()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="details-modal-body">
+                    <div class="details-section">
+                        <h3>User Information</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Name:</span>
+                                <span class="detail-value">${complaint.anonymous ? 'Anonymous' : complaint.userName}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Type:</span>
+                                <span class="detail-value">${complaint.postType}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Status:</span>
+                                <span class="detail-value status-badge-${complaint.status || 'pending'}">${complaint.status || 'pending'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Submitted:</span>
+                                <span class="detail-value">${new Date(complaint.createdAt).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>Complaint Message</h3>
+                        <div class="detail-message">${complaint.message}</div>
+                    </div>
+
+                    ${complaint.locationAddress ? `
+                    <div class="details-section">
+                        <h3>Location</h3>
+                        <div class="detail-location">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            ${complaint.locationAddress}
+                        </div>
+                        ${complaint.latitude && complaint.longitude ? `
+                        <div class="detail-coordinates">
+                            Coordinates: ${complaint.latitude.toFixed(6)}, ${complaint.longitude.toFixed(6)}
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+
+                    ${complaint.imageUrl ? `
+                    <div class="details-section">
+                        <h3>Attached Image</h3>
+                        <div class="detail-image-container">
+                            <img src="${complaint.imageUrl}" alt="Complaint image" class="detail-image" onclick="window.open('${complaint.imageUrl}', '_blank')">
+                            <p class="detail-image-hint">Click image to view full size</p>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${complaint.adminResponse ? `
+                    <div class="details-section">
+                        <h3>Admin Response</h3>
+                        <div class="detail-admin-response">${complaint.adminResponse}</div>
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="details-modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.details-modal-overlay').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    } catch (error) {
+        alert('Error loading complaint details: ' + error.message);
+    }
+}
+
+// View Post Details Modal
+async function viewPostDetails(postId) {
+    try {
+        const response = await apiCall(`/admin/silent-room/reports?page=1&limit=1000`);
+        const post = response.data.reports.find(p => p.id === postId);
+        
+        if (!post) {
+            alert('Post not found');
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'details-modal-overlay';
+        modal.innerHTML = `
+            <div class="details-modal">
+                <div class="details-modal-header">
+                    <h2>Community Post Details</h2>
+                    <button class="details-modal-close" onclick="this.closest('.details-modal-overlay').remove()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="details-modal-body">
+                    <div class="details-section">
+                        <h3>User Information</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Name:</span>
+                                <span class="detail-value">${post.anonymous ? 'Anonymous' : post.userName}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Type:</span>
+                                <span class="detail-value">${post.postType}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Flagged:</span>
+                                <span class="detail-value">${post.flagged || post.reportCount > 0 ? '⚠️ Yes' : '✅ No'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Posted:</span>
+                                <span class="detail-value">${new Date(post.createdAt).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>Post Message</h3>
+                        <div class="detail-message">${post.message}</div>
+                    </div>
+
+                    ${post.locationAddress ? `
+                    <div class="details-section">
+                        <h3>Location</h3>
+                        <div class="detail-location">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            ${post.locationAddress}
+                        </div>
+                        ${post.latitude && post.longitude ? `
+                        <div class="detail-coordinates">
+                            Coordinates: ${post.latitude.toFixed(6)}, ${post.longitude.toFixed(6)}
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+
+                    ${post.imageUrl ? `
+                    <div class="details-section">
+                        <h3>Attached Image</h3>
+                        <div class="detail-image-container">
+                            <img src="${post.imageUrl}" alt="Post image" class="detail-image" onclick="window.open('${post.imageUrl}', '_blank')">
+                            <p class="detail-image-hint">Click image to view full size</p>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="details-section">
+                        <h3>Engagement</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">❤️ Likes:</span>
+                                <span class="detail-value">${post.likes || 0}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">💬 Comments:</span>
+                                <span class="detail-value">${post.comments || 0}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">👁️ Views:</span>
+                                <span class="detail-value">${post.views || 0}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">🚩 Reports:</span>
+                                <span class="detail-value">${post.reportCount || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="details-modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.details-modal-overlay').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    } catch (error) {
+        alert('Error loading post details: ' + error.message);
+    }
 }
