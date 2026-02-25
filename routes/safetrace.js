@@ -66,7 +66,7 @@ router.post('/geocode', protect, async (req, res, next) => {
 /**
  * GET /api/safetrace/autocomplete
  * Get location suggestions for autocomplete (uses Nominatim)
- * ONLY returns results within Mumbai area
+ * Returns results from all of India
  */
 router.get('/autocomplete', protect, async (req, res, next) => {
     try {
@@ -81,20 +81,14 @@ router.get('/autocomplete', protect, async (req, res, next) => {
 
         // Use Nominatim for autocomplete - has ALL locations
         const axios = require('axios');
-        const { calculateDistance } = require('../services/safeTraceService');
-        
-        // Add "Mumbai" to query to bias results
-        const mumbaiQuery = query.includes('mumbai') ? query : `${query}, Mumbai`;
         
         const response = await axios.get('https://nominatim.openstreetmap.org/search', {
             params: {
-                q: mumbaiQuery,
+                q: query,
                 format: 'json',
-                limit: 30, // Get more results to filter
+                limit: Math.min(parseInt(limit), 15),
                 addressdetails: 1,
-                countrycodes: 'in',
-                bounded: 0,
-                viewbox: '72.7,19.3,73.0,18.9', // Mumbai bounding box
+                countrycodes: 'in', // Limit to India
                 'accept-language': 'en'
             },
             headers: {
@@ -104,75 +98,20 @@ router.get('/autocomplete', protect, async (req, res, next) => {
             timeout: 5000
         });
 
-        // Mumbai center for distance filtering
-        const MUMBAI_CENTER_LAT = 19.0760;
-        const MUMBAI_CENTER_LNG = 72.8777;
-        const MAX_DISTANCE_FROM_MUMBAI = 50000; // 50km
-
-        // Filter and score results
-        const filteredSuggestions = response.data
-            .map(item => {
-                const lat = parseFloat(item.lat);
-                const lng = parseFloat(item.lon);
-                const displayName = item.display_name.toLowerCase();
-                const distance = calculateDistance(lat, lng, MUMBAI_CENTER_LAT, MUMBAI_CENTER_LNG);
-                
-                // Reject results outside Mumbai area
-                if (distance > MAX_DISTANCE_FROM_MUMBAI) {
-                    return null;
-                }
-                
-                // Reject results mentioning other cities
-                const otherCities = ['pune', 'thane', 'navi mumbai', 'kalyan', 'nashik', 'nagpur'];
-                const mentionsOtherCity = otherCities.some(city => 
-                    displayName.includes(city) && !displayName.includes('mumbai')
-                );
-                
-                if (mentionsOtherCity) {
-                    return null;
-                }
-                
-                let score = 0;
-                
-                // Prefer results within Mumbai bounding box
-                if (lat >= 18.8 && lat <= 19.3 && lng >= 72.7 && lng <= 73.1) {
-                    score += 100;
-                }
-                
-                // Prefer results mentioning Mumbai
-                if (displayName.includes('mumbai')) {
-                    score += 50;
-                }
-                
-                // Distance penalty
-                score -= distance / 1000;
-                
-                return {
-                    name: item.display_name.split(',')[0],
-                    address: item.display_name,
-                    latitude: lat,
-                    longitude: lng,
-                    type: item.type,
-                    category: item.class,
-                    distance: distance,
-                    score: score
-                };
-            })
-            .filter(item => item !== null) // Remove rejected items
-            .sort((a, b) => b.score - a.score) // Sort by score
-            .slice(0, Math.min(parseInt(limit), 10)) // Limit results
-            .map(({ name, address, latitude, longitude, type, category }) => ({
-                name,
-                address,
-                latitude,
-                longitude,
-                type,
-                category
+        const suggestions = response.data
+            .slice(0, Math.min(parseInt(limit), 10))
+            .map(item => ({
+                name: item.display_name.split(',')[0],
+                address: item.display_name,
+                latitude: parseFloat(item.lat),
+                longitude: parseFloat(item.lon),
+                type: item.type,
+                category: item.class
             }));
 
         res.json({
             success: true,
-            data: { suggestions: filteredSuggestions }
+            data: { suggestions }
         });
     } catch (error) {
         console.error('Autocomplete error:', error.message);
