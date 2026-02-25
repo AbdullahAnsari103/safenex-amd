@@ -578,43 +578,57 @@ async function findRoutes() {
     try {
         let startLat, startLng;
 
-        // Determine start location
-        if (usingGPS && currentPosition) {
-            // Use GPS location
+        // Determine start location - prioritize manual input over GPS
+        if (startValue && !startValue.includes('Getting location')) {
+            // User has entered a manual address - use it regardless of GPS status
+            // Check if it's coordinates format (lat, lng)
+            const coordMatch = startValue.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+            
+            if (coordMatch) {
+                // Direct coordinates provided
+                startLat = parseFloat(coordMatch[1]);
+                startLng = parseFloat(coordMatch[2]);
+                console.log('Using coordinate input:', startLat, startLng);
+            } else {
+                // Address string - geocode it
+                try {
+                    const startGeocodeResponse = await apiCall('/geocode', {
+                        method: 'POST',
+                        body: JSON.stringify({ address: startValue })
+                    });
+                    const startLocation = startGeocodeResponse.data;
+                    startLat = startLocation.latitude;
+                    startLng = startLocation.longitude;
+                    console.log('Geocoded start address:', startValue, '->', startLat, startLng);
+                    
+                    // Update manual start location
+                    manualStartLocation = { latitude: startLat, longitude: startLng };
+                    usingGPS = false; // Explicitly disable GPS mode
+                    
+                    // Update marker for manual location
+                    if (!userMarker) {
+                        const icon = L.divIcon({
+                            className: 'user-location-marker',
+                            html: `<div style="width: 20px; height: 20px; background: #F59E0B; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>`,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        userMarker = L.marker([startLat, startLng], { icon }).addTo(map);
+                    } else {
+                        userMarker.setLatLng([startLat, startLng]);
+                    }
+                    map.setView([startLat, startLng], 14);
+                } catch (error) {
+                    showNotification('Could not find starting location. Please check the address.', 'error');
+                    showLoading(false);
+                    return;
+                }
+            }
+        } else if (usingGPS && currentPosition) {
+            // No manual input - use GPS location
             startLat = currentPosition.latitude;
             startLng = currentPosition.longitude;
-        } else if (startValue) {
-            // Use manual address input - geocode it
-            try {
-                const startGeocodeResponse = await apiCall('/geocode', {
-                    method: 'POST',
-                    body: JSON.stringify({ address: startValue })
-                });
-                const startLocation = startGeocodeResponse.data;
-                startLat = startLocation.latitude;
-                startLng = startLocation.longitude;
-                
-                // Update manual start location
-                manualStartLocation = { latitude: startLat, longitude: startLng };
-                
-                // Update marker for manual location
-                if (!userMarker) {
-                    const icon = L.divIcon({
-                        className: 'user-location-marker',
-                        html: `<div style="width: 20px; height: 20px; background: #F59E0B; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>`,
-                        iconSize: [20, 20],
-                        iconAnchor: [10, 10]
-                    });
-                    userMarker = L.marker([startLat, startLng], { icon }).addTo(map);
-                } else {
-                    userMarker.setLatLng([startLat, startLng]);
-                }
-                map.setView([startLat, startLng], 14);
-            } catch (error) {
-                showNotification('Could not find starting location. Please check the address.', 'error');
-                showLoading(false);
-                return;
-            }
+            console.log('Using GPS location:', startLat, startLng);
         } else {
             showNotification('Please enter a starting location or use GPS', 'error');
             showLoading(false);
@@ -628,6 +642,7 @@ async function findRoutes() {
         });
 
         const destination = geocodeResponse.data;
+        console.log('Destination geocoded:', destValue, '->', destination.latitude, destination.longitude);
 
         // Calculate distance
         const distance = calculateDistanceKm(
@@ -1316,6 +1331,12 @@ function setupAutocompleteForInput(inputId) {
 
     input.addEventListener('input', async (e) => {
         const query = e.target.value.trim();
+        
+        // If this is start input and user is typing, disable GPS mode
+        if (inputId === 'startInput' && query.length > 0 && !query.includes('Getting location')) {
+            usingGPS = false;
+            updateLocationStatus('Manual input mode', 'info');
+        }
         
         // Clear previous timeout
         if (inputAutocompleteTimeout) {
