@@ -441,9 +441,13 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                 if (shortestResponse.data.routes && shortestResponse.data.routes.length > 0) {
                     const shortestRoute = shortestResponse.data.routes[0];
                     
-                    // Only add if it's different from the first route (reduced threshold to 3%)
+                    // Check if it's different from existing routes (1% threshold)
                     const distanceDiff = Math.abs(shortestRoute.summary.distance - routes[0].distance);
-                    if (distanceDiff > routes[0].distance * 0.03) { // Reduced from 5% to 3%
+                    const isDifferent = distanceDiff > routes[0].distance * 0.01; // Reduced to 1%
+                    
+                    console.log(`Shortest route: ${shortestRoute.summary.distance}m, difference: ${distanceDiff}m (${(distanceDiff/routes[0].distance*100).toFixed(1)}%), isDifferent: ${isDifferent}`);
+                    
+                    if (isDifferent) {
                         let coordinates;
                         if (typeof shortestRoute.geometry === 'string') {
                             const decoded = polyline.decode(shortestRoute.geometry);
@@ -467,6 +471,8 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                             });
                             console.log('Added shortest route as alternative');
                         }
+                    } else {
+                        console.log('Shortest route too similar, skipping');
                     }
                 }
             } catch (altError) {
@@ -496,11 +502,15 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                     if (fastestResponse.data.routes && fastestResponse.data.routes.length > 0) {
                         const fastestRoute = fastestResponse.data.routes[0];
                         
-                        // Check if different from existing routes
+                        // Check if different from existing routes (1% threshold)
                         const isDifferent = routes.every(r => {
                             const distanceDiff = Math.abs(fastestRoute.summary.distance - r.distance);
-                            return distanceDiff > r.distance * 0.03; // Reduced from 5% to 3%
+                            const percentDiff = (distanceDiff / r.distance) * 100;
+                            console.log(`Fastest route vs route ${r.id}: ${fastestRoute.summary.distance}m vs ${r.distance}m, diff: ${percentDiff.toFixed(1)}%`);
+                            return distanceDiff > r.distance * 0.01; // Reduced to 1%
                         });
+
+                        console.log(`Fastest route isDifferent: ${isDifferent}`);
 
                         if (isDifferent) {
                             let coordinates;
@@ -575,11 +585,15 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                         console.log(`Received ${noAvoidResponse.data.routes.length} routes without avoidance`);
                         
                         for (const altRoute of noAvoidResponse.data.routes) {
-                            // Check if different from existing routes
+                            // Check if different from existing routes (1% threshold)
                             const isDifferent = routes.every(r => {
                                 const distanceDiff = Math.abs(altRoute.summary.distance - r.distance);
-                                return distanceDiff > r.distance * 0.03; // Reduced from 5% to 3%
+                                const percentDiff = (distanceDiff / r.distance) * 100;
+                                console.log(`No-avoid route vs route ${r.id}: ${altRoute.summary.distance}m vs ${r.distance}m, diff: ${percentDiff.toFixed(1)}%`);
+                                return distanceDiff > r.distance * 0.01; // Reduced to 1%
                             });
+
+                            console.log(`No-avoid route isDifferent: ${isDifferent}`);
 
                             if (isDifferent) {
                                 let coordinates;
