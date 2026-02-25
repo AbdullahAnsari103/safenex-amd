@@ -246,13 +246,13 @@
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 8px;
     margin-bottom: 12px;
-    max-width: 600px; /* Limit total width */
+    max-width: 400px; /* Reduced from 600px for complaints */
 }
 
 .sr-post__image {
     width: 100%;
-    max-width: 300px; /* Maximum width for single image */
-    height: 180px; /* Reduced from 200px */
+    max-width: 250px; /* Reduced from 300px */
+    height: 150px; /* Reduced from 180px */
     object-fit: cover;
     border-radius: var(--r-md);
     cursor: pointer;
