@@ -150,8 +150,12 @@ async function geocodeAddress(address) {
             params: {
                 q: address,
                 format: 'json',
-                limit: 1,
-                addressdetails: 1
+                limit: 10, // Get top 10 results for better filtering
+                addressdetails: 1,
+                // Bias results towards India/Mumbai area
+                countrycodes: 'in', // Limit to India
+                bounded: 0,
+                viewbox: '72.7,19.3,73.0,18.9' // Mumbai bounding box (west,north,east,south)
             },
             headers: {
                 'Accept': 'application/json',
@@ -161,12 +165,102 @@ async function geocodeAddress(address) {
         });
 
         if (response.data && response.data.length > 0) {
-            const location = response.data[0];
+            console.log(`Nominatim returned ${response.data.length} results for "${address}"`);
+            
+            // Mumbai center coordinates for distance validation
+            const MUMBAI_CENTER_LAT = 19.0760;
+            const MUMBAI_CENTER_LNG = 72.8777;
+            const MAX_DISTANCE_FROM_MUMBAI = 100000; // 100km radius from Mumbai center
+            
+            // Filter and score results
+            const scoredResults = response.data.map(loc => {
+                const lat = parseFloat(loc.lat);
+                const lng = parseFloat(loc.lon);
+                const displayName = loc.display_name.toLowerCase();
+                
+                // Calculate distance from Mumbai center
+                const distanceFromMumbai = calculateDistance(lat, lng, MUMBAI_CENTER_LAT, MUMBAI_CENTER_LNG);
+                
+                let score = 0;
+                
+                // Highest priority: Results within Mumbai bounding box
+                if (lat >= 18.8 && lat <= 19.3 && lng >= 72.7 && lng <= 73.1) {
+                    score += 1000;
+                }
+                
+                // High priority: Results mentioning Mumbai
+                if (displayName.includes('mumbai')) {
+                    score += 500;
+                }
+                
+                // Medium priority: Results in Maharashtra
+                if (displayName.includes('maharashtra')) {
+                    score += 200;
+                }
+                
+                // Distance penalty: Closer to Mumbai center is better
+                score -= distanceFromMumbai / 1000; // Subtract km distance
+                
+                // Importance score from Nominatim (higher is better)
+                if (loc.importance) {
+                    score += loc.importance * 100;
+                }
+                
+                return {
+                    ...loc,
+                    lat,
+                    lng,
+                    distanceFromMumbai,
+                    score
+                };
+            });
+            
+            // Sort by score (highest first)
+            scoredResults.sort((a, b) => b.score - a.score);
+            
+            // Log top 3 results for debugging
+            console.log('Top 3 geocoding results:');
+            scoredResults.slice(0, 3).forEach((loc, i) => {
+                console.log(`  ${i + 1}. ${loc.display_name}`);
+                console.log(`     Coords: [${loc.lat}, ${loc.lng}], Distance from Mumbai: ${(loc.distanceFromMumbai/1000).toFixed(1)}km, Score: ${loc.score.toFixed(1)}`);
+            });
+            
+            // Select best result
+            const bestResult = scoredResults[0];
+            
+            // Validate: Reject if too far from Mumbai (likely wrong location)
+            if (bestResult.distanceFromMumbai > MAX_DISTANCE_FROM_MUMBAI) {
+                console.warn(`Best result is ${(bestResult.distanceFromMumbai/1000).toFixed(1)}km from Mumbai, likely incorrect`);
+                
+                // Try to find a closer alternative
+                const closerResult = scoredResults.find(loc => loc.distanceFromMumbai <= MAX_DISTANCE_FROM_MUMBAI);
+                
+                if (closerResult) {
+                    console.log(`Using closer alternative: ${closerResult.display_name}`);
+                    const result = {
+                        latitude: closerResult.lat,
+                        longitude: closerResult.lng,
+                        address: closerResult.display_name
+                    };
+                    
+                    geocodeCache.set(cacheKey, {
+                        data: result,
+                        timestamp: Date.now()
+                    });
+                    
+                    return result;
+                } else {
+                    throw new Error(`Location "${address}" appears to be outside the Mumbai area. Please verify the address or try a different search term.`);
+                }
+            }
+            
             const result = {
-                latitude: parseFloat(location.lat),
-                longitude: parseFloat(location.lon),
-                address: location.display_name
+                latitude: bestResult.lat,
+                longitude: bestResult.lng,
+                address: bestResult.display_name
             };
+
+            console.log('Selected geocoding result:', result);
 
             // Cache result
             geocodeCache.set(cacheKey, {
