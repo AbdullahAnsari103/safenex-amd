@@ -25,6 +25,7 @@ const state = {
         stationaryStartTime: null,
         stationaryThreshold: 6 * 60 * 1000, // 6 minutes in milliseconds
         movementThreshold: 10, // meters - consider stationary if moved less than this (reduced from 20 for accuracy)
+        isRequesting: false, // Prevent duplicate simultaneous requests
     },
 };
 
@@ -564,21 +565,7 @@ function handleLocationUpdate(position) {
         Math.abs(lastCoord.latitude - newCoord.latitude) < 0.000001 &&
         Math.abs(lastCoord.longitude - newCoord.longitude) < 0.000001) {
         console.log('[Location] Duplicate coordinate, skipping...');
-        
-        // Request fresh location after 3 seconds using progressive strategy
-        setTimeout(() => {
-            navigator.geolocation.getCurrentPosition(
-                handleLocationUpdate,
-                (error) => {
-                    console.warn('[Location] Duplicate retry failed:', error.message);
-                },
-                {
-                    enableHighAccuracy: false,
-                    timeout: 5000,
-                    maximumAge: 5000
-                }
-            );
-        }, 3000);
+        // Don't request new location here - let the scheduled request handle it
         return;
     }
 
@@ -599,12 +586,12 @@ function handleLocationUpdate(position) {
         // Show small toast notification instead of chat messages
         if (coordCount === 1) {
             showToast('📍 GPS Point 1/3 tracked', 2000);
-            // Request next location after 5 seconds
-            setTimeout(requestFreshLocation, 5000);
+            // Request next location after 6 seconds (increased from 5)
+            setTimeout(requestFreshLocation, 6000);
         } else if (coordCount === 2) {
             showToast('📍 GPS Point 2/3 tracked', 2000);
-            // Request next location after 5 seconds
-            setTimeout(requestFreshLocation, 5000);
+            // Request next location after 6 seconds (increased from 5)
+            setTimeout(requestFreshLocation, 6000);
         } else if (coordCount === 3) {
             showToast('✅ All 3 GPS points tracked! Emergency system ready', 3000);
         }
@@ -632,25 +619,43 @@ function handleLocationUpdate(position) {
 function requestFreshLocation() {
     console.log('[Location] Requesting fresh location...');
     
-    // Use progressive strategy for fresh location requests too
+    // Prevent multiple simultaneous requests
+    if (state.locationTracker.isRequesting) {
+        console.log('[Location] Request already in progress, skipping...');
+        return;
+    }
+    
+    state.locationTracker.isRequesting = true;
+    
+    // Use progressive strategy: quick first, then high accuracy if needed
     navigator.geolocation.getCurrentPosition(
-        handleLocationUpdate,
+        (position) => {
+            state.locationTracker.isRequesting = false;
+            handleLocationUpdate(position);
+        },
         (error) => {
-            console.warn('[Location] Quick fresh location failed, trying high accuracy...', error.message);
-            // Fallback to high accuracy
+            console.warn('[Location] Quick fresh location failed:', error.message);
+            // Fallback to high accuracy with longer timeout
             navigator.geolocation.getCurrentPosition(
-                handleLocationUpdate,
-                handleLocationError,
+                (position) => {
+                    state.locationTracker.isRequesting = false;
+                    handleLocationUpdate(position);
+                },
+                (error) => {
+                    state.locationTracker.isRequesting = false;
+                    console.error('[Location] High accuracy also failed:', error.message);
+                    // Don't show error to user, just log it
+                },
                 {
                     enableHighAccuracy: true,
-                    timeout: 15000,
+                    timeout: 20000, // Increased from 15s to 20s
                     maximumAge: 5000
                 }
             );
         },
         {
             enableHighAccuracy: false, // Quick mode first
-            timeout: 5000,
+            timeout: 8000, // Increased from 5s to 8s
             maximumAge: 10000
         }
     );
