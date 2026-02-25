@@ -24,6 +24,21 @@ const GEOCODE_CACHE_TTL = 60 * 60 * 1000;
 const routeCache = new Map();
 const ROUTE_CACHE_TTL = 30 * 1000; // 30 seconds
 
+// Clear cache periodically to prevent stale data
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of routeCache.entries()) {
+        if (now - value.timestamp > ROUTE_CACHE_TTL) {
+            routeCache.delete(key);
+        }
+    }
+    for (const [key, value] of geocodeCache.entries()) {
+        if (now - value.timestamp > GEOCODE_CACHE_TTL) {
+            geocodeCache.delete(key);
+        }
+    }
+}, 60 * 1000); // Clean every minute
+
 // Rate limiting
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // 100ms between requests
@@ -228,11 +243,12 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         throw new Error('OpenRouteService API key not configured');
     }
 
-    // Check cache first - include travel mode in cache key
-    const cacheKey = `${startLat.toFixed(4)},${startLng.toFixed(4)}-${endLat.toFixed(4)},${endLng.toFixed(4)}-${profile}`;
+    // Check cache first - include travel mode AND avoidance areas in cache key
+    const avoidKey = avoidAreas.length > 0 ? `-avoid${avoidAreas.length}` : '';
+    const cacheKey = `${startLat.toFixed(5)},${startLng.toFixed(5)}-${endLat.toFixed(5)},${endLng.toFixed(5)}-${profile}${avoidKey}`;
     const cached = routeCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < ROUTE_CACHE_TTL) {
-        console.log(`Returning cached routes for ${profile}`);
+        console.log(`Returning cached routes for ${profile} (cache key: ${cacheKey})`);
         return cached.data;
     }
 
@@ -603,10 +619,19 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
 
         console.log(`Final route count: ${routes.length} routes`);
 
-        // Cache the results
+        // Cache the results with detailed logging
+        console.log(`Caching routes with key: ${cacheKey}`);
+        console.log(`Routes go from [${startLat}, ${startLng}] to [${endLat}, ${endLng}]`);
+        
         routeCache.set(cacheKey, {
             data: routes,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            // Store metadata for debugging
+            metadata: {
+                start: [startLat, startLng],
+                end: [endLat, endLng],
+                profile: profile
+            }
         });
 
         return routes;
