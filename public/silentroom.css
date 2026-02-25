@@ -243,17 +243,17 @@
 
 .sr-post__images {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
     margin-bottom: 12px;
-    max-width: 450px;
+    max-width: 600px; /* Increased from 450px */
 }
 
 /* Community Feed Post Images - LARGER */
 .sr-post__image {
     width: 100%;
-    max-width: 320px; /* Increased from 280px */
-    height: 220px; /* Increased from 180px */
+    max-width: 400px; /* Increased from 320px */
+    height: 280px; /* Increased from 220px */
     object-fit: cover;
     border-radius: var(--r-md);
     cursor: pointer;
