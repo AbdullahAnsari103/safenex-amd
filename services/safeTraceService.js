@@ -286,6 +286,8 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         extra_info: ['waytype', 'steepness']
     };
 
+    console.log(`Fetching routes from [${startLat}, ${startLng}] to [${endLat}, ${endLng}] for ${profile}`);
+
     // Add avoidance areas if provided (for danger zones)
     if (avoidAreas && avoidAreas.length > 0) {
         requestBody.options = {
@@ -518,9 +520,17 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
             // If we still only have 1 route and had avoidance areas, try without avoidance
             if (routes.length < 2 && avoidAreas.length > 0) {
                 console.log('Trying to get alternative route without danger zone avoidance...');
+                console.log('Using coordinates:', {
+                    start: [startLng, startLat],
+                    end: [endLng, endLat]
+                });
+                
                 try {
                     const noAvoidRequest = {
-                        coordinates: requestBody.coordinates,
+                        coordinates: [
+                            [startLng, startLat],  // Explicitly use original coordinates
+                            [endLng, endLat]
+                        ],
                         alternative_routes: {
                             target_count: 2,
                             weight_factor: 1.6,
@@ -546,6 +556,8 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                     });
 
                     if (noAvoidResponse.data.routes && noAvoidResponse.data.routes.length > 0) {
+                        console.log(`Received ${noAvoidResponse.data.routes.length} routes without avoidance`);
+                        
                         for (const altRoute of noAvoidResponse.data.routes) {
                             // Check if different from existing routes
                             const isDifferent = routes.every(r => {
