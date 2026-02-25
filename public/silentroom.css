@@ -243,16 +243,16 @@
 
 .sr-post__images {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 8px;
     margin-bottom: 12px;
-    max-width: 400px; /* Reduced from 600px for complaints */
+    max-width: 300px; /* Reduced from 400px */
 }
 
 .sr-post__image {
     width: 100%;
-    max-width: 250px; /* Reduced from 300px */
-    height: 150px; /* Reduced from 180px */
+    max-width: 200px; /* Reduced from 250px */
+    height: 120px; /* Reduced from 150px */
     object-fit: cover;
     border-radius: var(--r-md);
     cursor: pointer;
