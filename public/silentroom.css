@@ -246,13 +246,14 @@
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 10px;
     margin-bottom: 12px;
-    max-width: 450px; /* Increased from 350px */
+    max-width: 450px;
 }
 
+/* Community Feed Post Images - LARGER */
 .sr-post__image {
     width: 100%;
-    max-width: 280px; /* Increased from 220px */
-    height: 180px; /* Increased from 140px */
+    max-width: 320px; /* Increased from 280px */
+    height: 220px; /* Increased from 180px */
     object-fit: cover;
     border-radius: var(--r-md);
     cursor: pointer;
@@ -261,6 +262,23 @@
 }
 
 .sr-post__image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Complaint Post Images - SMALLER */
+.sr-post__image--complaint {
+    width: 100%;
+    max-width: 200px; /* Smaller than community feed */
+    height: 140px; /* Smaller than community feed */
+    object-fit: cover;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: transform var(--t);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sr-post__image--complaint:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }

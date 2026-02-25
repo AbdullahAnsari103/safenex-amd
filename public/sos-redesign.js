@@ -743,20 +743,21 @@ function checkStationaryStatus() {
 
     const wasStationary = state.locationTracker.isStationary;
 
-    // User is stationary if:
-    // 1. Total distance is less than threshold, OR
-    // 2. Max distance from first point is less than threshold, OR
-    // 3. Average distance per update is very small
-    const isStationary = totalDistance < state.locationTracker.movementThreshold || 
-                        maxDistance < state.locationTracker.movementThreshold ||
-                        avgDistance < 5; // Less than 5m average movement
+    // User is stationary if ALL of these conditions are true:
+    // 1. Total distance is less than 30m (increased threshold for GPS accuracy)
+    // 2. Max distance from first point is less than 25m
+    // 3. Average distance per update is less than 15m
+    // This prevents false "moving" detection due to GPS drift
+    const isStationary = totalDistance < 30 && 
+                        maxDistance < 25 &&
+                        avgDistance < 15;
 
     if (isStationary) {
         if (!state.locationTracker.isStationary) {
             // Just became stationary
             state.locationTracker.isStationary = true;
             state.locationTracker.stationaryStartTime = Date.now();
-            console.log('[Location] User is STATIONARY (total distance:', Math.round(totalDistance), 'm, max:', Math.round(maxDistance), 'm)');
+            console.log('[Location] User is STATIONARY (total distance:', Math.round(totalDistance), 'm, max:', Math.round(maxDistance), 'm, avg:', Math.round(avgDistance), 'm)');
         } else {
             // Check how long stationary
             const stationaryDuration = Date.now() - state.locationTracker.stationaryStartTime;
@@ -773,7 +774,7 @@ function checkStationaryStatus() {
     } else {
         // User is moving
         if (state.locationTracker.isStationary) {
-            console.log('[Location] User is MOVING (total distance:', Math.round(totalDistance), 'm, max:', Math.round(maxDistance), 'm)');
+            console.log('[Location] User is MOVING (total distance:', Math.round(totalDistance), 'm, max:', Math.round(maxDistance), 'm, avg:', Math.round(avgDistance), 'm)');
         }
         state.locationTracker.isStationary = false;
         state.locationTracker.stationaryStartTime = null;

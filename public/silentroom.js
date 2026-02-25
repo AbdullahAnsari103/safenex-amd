@@ -1869,7 +1869,7 @@ function renderComplaints(complaints) {
                 ${complaint.images && complaint.images.length > 0 ? `
                 <div class="sr-post__images">
                     ${complaint.images.map(img => `
-                        <img src="data:${img.mimeType};base64,${img.data}" alt="Evidence" onclick="viewImage('data:${img.mimeType};base64,${img.data}')">
+                        <img src="data:${img.mimeType};base64,${img.data}" alt="Evidence" class="sr-post__image--complaint" onclick="viewImage('data:${img.mimeType};base64,${img.data}')">
                     `).join('')}
                 </div>
                 ` : ''}
