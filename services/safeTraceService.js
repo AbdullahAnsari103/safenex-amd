@@ -397,7 +397,8 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         });
 
         // If we only got 1 route but requested more, try to get alternatives with different preferences
-        if (routes.length === 1 && alternatives > 1 && avoidAreas.length === 0) {
+        // This happens often when avoidance areas are used
+        if (routes.length === 1 && alternatives > 1) {
             console.log('Only 1 route returned, attempting to fetch alternatives with different preferences...');
             
             try {
@@ -511,6 +512,79 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                     }
                 } catch (altError) {
                     console.warn('Failed to fetch fastest route alternative:', altError.message);
+                }
+            }
+
+            // If we still only have 1 route and had avoidance areas, try without avoidance
+            if (routes.length < 2 && avoidAreas.length > 0) {
+                console.log('Trying to get alternative route without danger zone avoidance...');
+                try {
+                    const noAvoidRequest = {
+                        coordinates: requestBody.coordinates,
+                        alternative_routes: {
+                            target_count: 2,
+                            weight_factor: 1.6,
+                            share_factor: 0.5
+                        },
+                        elevation: false,
+                        instructions: true,
+                        preference: 'recommended',
+                        geometry_simplify: false,
+                        continue_straight: false
+                        // No avoidance areas
+                    };
+
+                    const noAvoidResponse = await retryWithBackoff(async () => {
+                        return await axios.post(endpoint, noAvoidRequest, {
+                            headers: {
+                                'Authorization': OPENROUTE_API_KEY,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                            },
+                            timeout: 45000
+                        });
+                    });
+
+                    if (noAvoidResponse.data.routes && noAvoidResponse.data.routes.length > 0) {
+                        for (const altRoute of noAvoidResponse.data.routes) {
+                            // Check if different from existing routes
+                            const isDifferent = routes.every(r => {
+                                const distanceDiff = Math.abs(altRoute.summary.distance - r.distance);
+                                return distanceDiff > r.distance * 0.05;
+                            });
+
+                            if (isDifferent) {
+                                let coordinates;
+                                if (typeof altRoute.geometry === 'string') {
+                                    const decoded = polyline.decode(altRoute.geometry);
+                                    coordinates = decoded.map(coord => [coord[1], coord[0]]);
+                                } else if (altRoute.geometry.coordinates) {
+                                    coordinates = altRoute.geometry.coordinates;
+                                }
+
+                                if (coordinates && coordinates.length > 0) {
+                                    routes.push({
+                                        id: `route_${routes.length}`,
+                                        coordinates: coordinates,
+                                        distance: altRoute.summary.distance,
+                                        duration: altRoute.summary.duration,
+                                        instructions: altRoute.segments?.[0]?.steps?.map(step => ({
+                                            instruction: step.instruction,
+                                            distance: step.distance,
+                                            duration: step.duration,
+                                            type: step.type
+                                        })) || []
+                                    });
+                                    console.log('Added alternative route without avoidance');
+                                    
+                                    // Stop after adding 2 alternatives
+                                    if (routes.length >= 3) break;
+                                }
+                            }
+                        }
+                    }
+                } catch (altError) {
+                    console.warn('Failed to fetch routes without avoidance:', altError.message);
                 }
             }
         }
