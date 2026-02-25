@@ -9,7 +9,8 @@ const UPDATE_INTERVAL = 10000; // 10 seconds for location updates
 const DEVIATION_THRESHOLD = 50; // 50 meters
 const MAX_ROUTE_DISTANCE_KM = 150; // OpenRouteService limit for walking routes
 const DEBOUNCE_DELAY = 300; // ms for input debouncing
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache for geocoding
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache for geocoding (reduced from 5)
+const AUTOCOMPLETE_CACHE_DURATION = 30 * 1000; // 30 seconds for autocomplete
 
 // State
 let map = null;
@@ -53,10 +54,13 @@ async function apiCall(endpoint, options = {}) {
     // Create cache key for GET requests
     const cacheKey = options.method === 'GET' || !options.method ? endpoint : null;
     
+    // Use shorter cache for autocomplete
+    const cacheDuration = endpoint.includes('/autocomplete') ? AUTOCOMPLETE_CACHE_DURATION : CACHE_DURATION;
+    
     // Check cache for GET requests
     if (cacheKey && geocodeCache.has(cacheKey)) {
         const cached = geocodeCache.get(cacheKey);
-        if (Date.now() - cached.timestamp < CACHE_DURATION) {
+        if (Date.now() - cached.timestamp < cacheDuration) {
             console.log('Using cached response for:', endpoint);
             return cached.data;
         }
@@ -1665,9 +1669,30 @@ document.getElementById('closeSidebar').addEventListener('click', () => {
     document.getElementById('sidebar').classList.remove('active');
 });
 
+// Clear old cache entries
+function clearOldCache() {
+    const now = Date.now();
+    let cleared = 0;
+    
+    for (const [key, value] of geocodeCache.entries()) {
+        const cacheDuration = key.includes('/autocomplete') ? AUTOCOMPLETE_CACHE_DURATION : CACHE_DURATION;
+        if (now - value.timestamp > cacheDuration) {
+            geocodeCache.delete(key);
+            cleared++;
+        }
+    }
+    
+    if (cleared > 0) {
+        console.log(`Cleared ${cleared} old cache entries`);
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing SafeTrace...');
+    
+    // Clear old cache entries on page load
+    clearOldCache();
     
     // Check authentication
     const token = getToken();
