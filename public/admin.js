@@ -2397,7 +2397,19 @@ async function viewComplaintDetails(postId) {
                     </div>
                     ` : ''}
 
-                    ${complaint.imageUrl ? `
+                    ${complaint.images && complaint.images.length > 0 ? `
+                    <div class="details-section">
+                        <h3>Attached Images</h3>
+                        <div class="detail-images-grid">
+                            ${complaint.images.map((img, idx) => `
+                                <div class="detail-image-container">
+                                    <img src="data:${img.mimeType};base64,${img.data}" alt="Complaint image ${idx + 1}" class="detail-image" onclick="window.open('data:${img.mimeType};base64,${img.data}', '_blank')">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p class="detail-image-hint">Click images to view full size</p>
+                    </div>
+                    ` : complaint.imageUrl ? `
                     <div class="details-section">
                         <h3>Attached Image</h3>
                         <div class="detail-image-container">
@@ -2496,7 +2508,19 @@ async function viewPostDetails(postId) {
                     </div>
                     ` : ''}
 
-                    ${post.imageUrl ? `
+                    ${post.images && post.images.length > 0 ? `
+                    <div class="details-section">
+                        <h3>Attached Images</h3>
+                        <div class="detail-images-grid">
+                            ${post.images.map((img, idx) => `
+                                <div class="detail-image-container">
+                                    <img src="data:${img.mimeType};base64,${img.data}" alt="Post image ${idx + 1}" class="detail-image" onclick="window.open('data:${img.mimeType};base64,${img.data}', '_blank')">
+                                </div>
+                            `).join('')}
+                        </div>
+                        <p class="detail-image-hint">Click images to view full size</p>
+                    </div>
+                    ` : post.imageUrl ? `
                     <div class="details-section">
                         <h3>Attached Image</h3>
                         <div class="detail-image-container">

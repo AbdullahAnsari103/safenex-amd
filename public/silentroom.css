@@ -243,22 +243,26 @@
 
 .sr-post__images {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 8px;
     margin-bottom: 12px;
+    max-width: 600px; /* Limit total width */
 }
 
 .sr-post__image {
     width: 100%;
-    height: 200px;
+    max-width: 300px; /* Maximum width for single image */
+    height: 180px; /* Reduced from 200px */
     object-fit: cover;
     border-radius: var(--r-md);
     cursor: pointer;
     transition: transform var(--t);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .sr-post__image:hover {
     transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .sr-post__actions {
