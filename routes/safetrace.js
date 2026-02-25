@@ -250,11 +250,18 @@ router.post('/routes', protect, async (req, res, next) => {
 
         const result = await getOptimizedRoutes(startLat, startLng, endLat, endLng, travelMode);
 
+        console.log('=== ROUTE CALCULATION DEBUG ===');
+        console.log('Start coordinates:', { lat: startLat, lng: startLng });
+        console.log('End coordinates:', { lat: endLat, lng: endLng });
+        console.log('Start address:', startAddress);
+        console.log('End address:', endAddress);
+        console.log('Travel mode:', travelMode);
         console.log(`Routes calculated for ${travelMode}:`, {
             routeCount: result.routes.length,
             distances: result.routes.map(r => r.distanceKm),
             durations: result.routes.map(r => r.durationMin)
         });
+        console.log('===============================');
 
         // Generate AI analysis for the recommended route (optional - graceful degradation)
         if (result.routes && result.routes.length > 0) {

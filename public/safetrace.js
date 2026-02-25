@@ -694,6 +694,7 @@ async function findRoutes() {
 
         const destination = geocodeResponse.data;
         console.log('Destination geocoded:', destValue, '->', destination.latitude, destination.longitude);
+        console.log('Full destination object:', destination);
 
         // Calculate distance
         const distance = calculateDistanceKm(
@@ -720,6 +721,12 @@ async function findRoutes() {
                 'warning'
             );
         }
+
+        console.log('=== SENDING ROUTE REQUEST ===');
+        console.log('Start:', { lat: startLat, lng: startLng, address: startValue });
+        console.log('End:', { lat: destination.latitude, lng: destination.longitude, address: destValue });
+        console.log('Travel mode:', travelMode);
+        console.log('============================');
 
         // Get routes
         const routesResponse = await apiCall('/routes', {
