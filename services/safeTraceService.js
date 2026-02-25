@@ -28,6 +28,40 @@ const ROUTE_CACHE_TTL = 30 * 1000; // 30 seconds
 let lastRequestTime = 0;
 const MIN_REQUEST_INTERVAL = 100; // 100ms between requests
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
+
+/**
+ * Retry helper function with exponential backoff
+ */
+async function retryWithBackoff(fn, retries = MAX_RETRIES, delay = RETRY_DELAY) {
+    try {
+        return await fn();
+    } catch (error) {
+        if (retries === 0) {
+            throw error;
+        }
+        
+        // Check if error is retryable (timeout, network error, 5xx)
+        const isRetryable = 
+            error.code === 'ETIMEDOUT' ||
+            error.code === 'ECONNABORTED' ||
+            error.code === 'ENOTFOUND' ||
+            error.code === 'ECONNRESET' ||
+            (error.response && error.response.status >= 500);
+        
+        if (!isRetryable) {
+            throw error;
+        }
+        
+        console.log(`Request failed, retrying in ${delay}ms... (${retries} retries left)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        // Exponential backoff
+        return retryWithBackoff(fn, retries - 1, delay * 2);
+    }
+}
 // Severity weights for risk calculation
 const SEVERITY_WEIGHTS = {
     low: 1,
@@ -58,36 +92,39 @@ async function geocodeAddress(address) {
         return cached.data;
     }
 
-    // Try OpenRouteService first
+    // Try OpenRouteService first with retry logic
     try {
-        const response = await axios.get(`${GEOCODE_BASE_URL}/search`, {
-            params: {
-                api_key: OPENROUTE_API_KEY,
-                text: address,
-                size: 1
-            },
-            headers: {
-                'Accept': 'application/json'
-            },
-            timeout: 30000 // Increased to 30 seconds
-        });
-
-        if (response.data.features && response.data.features.length > 0) {
-            const feature = response.data.features[0];
-            const result = {
-                latitude: feature.geometry.coordinates[1],
-                longitude: feature.geometry.coordinates[0],
-                address: feature.properties.label
-            };
-
-            // Cache result
-            geocodeCache.set(cacheKey, {
-                data: result,
-                timestamp: Date.now()
+        const result = await retryWithBackoff(async () => {
+            const response = await axios.get(`${GEOCODE_BASE_URL}/search`, {
+                params: {
+                    api_key: OPENROUTE_API_KEY,
+                    text: address,
+                    size: 1
+                },
+                headers: {
+                    'Accept': 'application/json'
+                },
+                timeout: 15000 // 15 seconds timeout
             });
 
-            return result;
-        }
+            if (response.data.features && response.data.features.length > 0) {
+                const feature = response.data.features[0];
+                return {
+                    latitude: feature.geometry.coordinates[1],
+                    longitude: feature.geometry.coordinates[0],
+                    address: feature.properties.label
+                };
+            }
+            throw new Error('No results found');
+        });
+
+        // Cache result
+        geocodeCache.set(cacheKey, {
+            data: result,
+            timestamp: Date.now()
+        });
+
+        return result;
     } catch (error) {
         console.warn('OpenRouteService geocoding failed, trying Nominatim fallback:', error.message);
     }
@@ -263,18 +300,20 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
     const endpoint = `${OPENROUTE_BASE_URL}/directions/${profile}`;
 
     try {
-        const response = await axios.post(
-            endpoint,
-            requestBody,
-            {
-                headers: {
-                    'Authorization': OPENROUTE_API_KEY,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
-                },
-                timeout: 60000 // Increased to 60 seconds for complex routes
-            }
-        );
+        const response = await retryWithBackoff(async () => {
+            return await axios.post(
+                endpoint,
+                requestBody,
+                {
+                    headers: {
+                        'Authorization': OPENROUTE_API_KEY,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                    },
+                    timeout: 45000 // 45 seconds timeout (reduced from 60s for faster retries)
+                }
+            );
+        });
 
         if (!response.data.routes || response.data.routes.length === 0) {
             throw new Error('No routes found');
@@ -369,13 +408,15 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                     alternative_routes: undefined // Remove alternative_routes for single route request
                 };
                 
-                const shortestResponse = await axios.post(endpoint, shortestRequest, {
-                    headers: {
-                        'Authorization': OPENROUTE_API_KEY,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
-                    },
-                    timeout: 60000
+                const shortestResponse = await retryWithBackoff(async () => {
+                    return await axios.post(endpoint, shortestRequest, {
+                        headers: {
+                            'Authorization': OPENROUTE_API_KEY,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                        },
+                        timeout: 45000
+                    });
                 });
 
                 if (shortestResponse.data.routes && shortestResponse.data.routes.length > 0) {
@@ -422,13 +463,15 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                         alternative_routes: undefined
                     };
                     
-                    const fastestResponse = await axios.post(endpoint, fastestRequest, {
-                        headers: {
-                            'Authorization': OPENROUTE_API_KEY,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
-                        },
-                        timeout: 60000
+                    const fastestResponse = await retryWithBackoff(async () => {
+                        return await axios.post(endpoint, fastestRequest, {
+                            headers: {
+                                'Authorization': OPENROUTE_API_KEY,
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                            },
+                            timeout: 45000
+                        });
                     });
 
                     if (fastestResponse.data.routes && fastestResponse.data.routes.length > 0) {
@@ -487,7 +530,7 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         if (error.response?.status === 401) {
             throw new Error('Invalid API key configuration');
         } else if (error.response?.status === 429) {
-            throw new Error('API rate limit exceeded. Please try again later.');
+            throw new Error('API rate limit exceeded. Please try again in a few minutes.');
         } else if (error.response?.status === 404) {
             const errorMsg = error.response?.data?.error?.message || '';
             if (errorMsg.includes('Route could not be found')) {
@@ -500,6 +543,10 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                 throw new Error('Destination is too far for walking routes. Please choose a closer location (within 150km).');
             }
             throw new Error('Invalid route request. Please check your start and end locations.');
+        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+            throw new Error('Request timed out. The routing service may be slow or unavailable. Please try again in a moment.');
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNRESET') {
+            throw new Error('Network error. Please check your internet connection and try again.');
         }
         
         throw new Error(`Failed to fetch routes: ${error.message}`);
