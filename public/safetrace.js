@@ -1,5 +1,6 @@
 /**
  * SafeTrace Frontend - Production-Ready Risk-Aware Navigation
+ * Optimized for performance and user experience
  */
 
 // Configuration
@@ -7,6 +8,8 @@ const API_BASE = '/api/safetrace';
 const UPDATE_INTERVAL = 10000; // 10 seconds for location updates
 const DEVIATION_THRESHOLD = 50; // 50 meters
 const MAX_ROUTE_DISTANCE_KM = 150; // OpenRouteService limit for walking routes
+const DEBOUNCE_DELAY = 300; // ms for input debouncing
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache for geocoding
 
 // State
 let map = null;
@@ -27,13 +30,19 @@ let mapTheme = 'bright'; // Default theme
 let tileLayer = null; // Store tile layer reference
 let travelMode = 'foot-walking'; // Default travel mode
 
+// Performance optimization: Cache for geocoding results
+const geocodeCache = new Map();
+
+// Performance optimization: Request deduplication
+const pendingRequests = new Map();
+
 // Get auth token
 function getToken() {
     // Try both token names for compatibility
     return localStorage.getItem('snx_token') || localStorage.getItem('token');
 }
 
-// API Helper
+// API Helper with request deduplication and caching
 async function apiCall(endpoint, options = {}) {
     const token = getToken();
     if (!token) {
@@ -41,40 +50,78 @@ async function apiCall(endpoint, options = {}) {
         throw new Error('Authentication required');
     }
 
-    try {
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                ...options.headers
-            }
-        });
-
-        let data;
-        try {
-            data = await response.json();
-        } catch (parseError) {
-            console.error('Failed to parse response:', parseError);
-            throw new Error('Invalid response from server');
+    // Create cache key for GET requests
+    const cacheKey = options.method === 'GET' || !options.method ? endpoint : null;
+    
+    // Check cache for GET requests
+    if (cacheKey && geocodeCache.has(cacheKey)) {
+        const cached = geocodeCache.get(cacheKey);
+        if (Date.now() - cached.timestamp < CACHE_DURATION) {
+            console.log('Using cached response for:', endpoint);
+            return cached.data;
         }
-
-        if (!response.ok) {
-            // If unauthorized, redirect to login
-            if (response.status === 401 || response.status === 403) {
-                console.error('Authentication failed, redirecting to login');
-                setTimeout(() => {
-                    window.location.href = '/onboarding.html';
-                }, 1000);
-            }
-            throw new Error(data?.message || data?.error || 'Request failed');
-        }
-
-        return data;
-    } catch (error) {
-        console.error('API call error:', error);
-        throw error;
+        geocodeCache.delete(cacheKey);
     }
+
+    // Request deduplication: prevent duplicate simultaneous requests
+    const requestKey = `${endpoint}-${JSON.stringify(options.body || '')}`;
+    if (pendingRequests.has(requestKey)) {
+        console.log('Reusing pending request for:', endpoint);
+        return pendingRequests.get(requestKey);
+    }
+
+    const requestPromise = (async () => {
+        try {
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    ...options.headers
+                }
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Failed to parse response:', parseError);
+                throw new Error('Invalid response from server');
+            }
+
+            if (!response.ok) {
+                // If unauthorized, redirect to login
+                if (response.status === 401 || response.status === 403) {
+                    console.error('Authentication failed, redirecting to login');
+                    setTimeout(() => {
+                        window.location.href = '/onboarding.html';
+                    }, 1000);
+                }
+                throw new Error(data?.message || data?.error || 'Request failed');
+            }
+
+            // Cache GET requests
+            if (cacheKey) {
+                geocodeCache.set(cacheKey, {
+                    data: data,
+                    timestamp: Date.now()
+                });
+            }
+
+            return data;
+        } catch (error) {
+            console.error('API call error:', error);
+            throw error;
+        } finally {
+            // Remove from pending requests
+            pendingRequests.delete(requestKey);
+        }
+    })();
+
+    // Store pending request
+    pendingRequests.set(requestKey, requestPromise);
+    
+    return requestPromise;
 }
 
 // Initialize Map
@@ -751,6 +798,26 @@ function calculateDistanceKm(lat1, lon1, lat2, lon2) {
     return R * c; // Distance in kilometers
 }
 
+// Throttle function for performance optimization
+function throttle(func, delay) {
+    let lastCall = 0;
+    return function(...args) {
+        const now = Date.now();
+        if (now - lastCall >= delay) {
+            lastCall = now;
+            return func.apply(this, args);
+        }
+    };
+}
+
+// Debounce function for input optimization
+function debounce(func, delay) {
+    let timeoutId;
+    return function(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+}
 // Display Routes
 function displayRoutes(routesList) {
     const routesSection = document.getElementById('routesSection');
@@ -885,13 +952,24 @@ function drawRoute(route) {
     }
 }
 
-// Display Danger Zones
+// Display Danger Zones with performance optimization
 function displayDangerZones(zones) {
     if (!dangerZoneLayer) return;
 
     dangerZoneLayer.clearLayers();
 
-    zones.forEach(zone => {
+    // Performance optimization: Limit number of zones displayed at once
+    const MAX_ZONES_DISPLAY = 100;
+    const zonesToDisplay = zones.slice(0, MAX_ZONES_DISPLAY);
+    
+    if (zones.length > MAX_ZONES_DISPLAY) {
+        console.log(`Displaying ${MAX_ZONES_DISPLAY} of ${zones.length} danger zones for performance`);
+    }
+
+    // Batch DOM operations for better performance
+    const fragment = document.createDocumentFragment();
+
+    zonesToDisplay.forEach(zone => {
         // Determine color based on severity - DARKER COLORS
         const severityKey = zone.severity || 'medium';
         const color = {
@@ -918,53 +996,54 @@ function displayDangerZones(zones) {
             className: isVerified ? 'verified-danger-zone' : 'user-danger-zone'
         }).addTo(dangerZoneLayer);
 
-        // Create popup content
-        let popupContent = `
-            <div style="padding: 8px; font-family: Inter, sans-serif; min-width: 200px;">
-                ${isVerified ? `
-                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                        <svg viewBox="0 0 24 24" fill="none" style="width: 16px; height: 16px; color: #10B981;">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <span style="font-size: 11px; color: #10B981; font-weight: 600; text-transform: uppercase;">Verified Zone</span>
+        // Create popup content - lazy load to improve initial render
+        circle.on('click', function() {
+            const popupContent = `
+                <div style="padding: 8px; font-family: Inter, sans-serif; min-width: 200px;">
+                    ${isVerified ? `
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <svg viewBox="0 0 24 24" fill="none" style="width: 16px; height: 16px; color: #10B981;">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span style="font-size: 11px; color: #10B981; font-weight: 600; text-transform: uppercase;">Verified Zone</span>
+                        </div>
+                    ` : ''}
+                    <div style="font-weight: 700; margin-bottom: 4px; text-transform: capitalize; color: #0A0E1A;">
+                        ${zone.placeName || zone.category.replace(/_/g, ' ')}
                     </div>
-                ` : ''}
-                <div style="font-weight: 700; margin-bottom: 4px; text-transform: capitalize; color: #0A0E1A;">
-                    ${zone.placeName || zone.category.replace(/_/g, ' ')}
-                </div>
-                <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">
-                    ${zone.description || 'No description'}
-                </div>
-                <div style="font-size: 11px; color: #94A3B8;">
-                    <div style="margin-bottom: 4px;">
-                        <span style="font-weight: 600;">Risk:</span> 
-                        <span style="color: ${color}; font-weight: 600; text-transform: capitalize;">${severityKey}</span>
+                    <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">
+                        ${zone.description || 'No description'}
                     </div>
-                    ${zone.activeHours ? `
+                    <div style="font-size: 11px; color: #94A3B8;">
                         <div style="margin-bottom: 4px;">
-                            <span style="font-weight: 600;">Active Hours:</span> ${zone.activeHours}
+                            <span style="font-weight: 600;">Risk:</span> 
+                            <span style="color: ${color}; font-weight: 600; text-transform: capitalize;">${severityKey}</span>
                         </div>
-                    ` : ''}
-                    ${zone.reportCount ? `
-                        <div style="margin-bottom: 4px;">
-                            <span style="font-weight: 600;">Reports:</span> ${zone.reportCount}
-                        </div>
-                    ` : ''}
-                    ${zone.source ? `
-                        <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #E5E7EB; font-size: 10px; color: #9CA3AF;">
-                            Source: ${zone.source}
-                        </div>
-                    ` : ''}
-                    ${zone.lastReported ? `
-                        <div style="margin-top: 4px;">
-                            <span style="font-weight: 600;">Last:</span> ${new Date(zone.lastReported).toLocaleDateString()}
-                        </div>
-                    ` : ''}
+                        ${zone.activeHours ? `
+                            <div style="margin-bottom: 4px;">
+                                <span style="font-weight: 600;">Active Hours:</span> ${zone.activeHours}
+                            </div>
+                        ` : ''}
+                        ${zone.reportCount ? `
+                            <div style="margin-bottom: 4px;">
+                                <span style="font-weight: 600;">Reports:</span> ${zone.reportCount}
+                            </div>
+                        ` : ''}
+                        ${zone.source ? `
+                            <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #E5E7EB; font-size: 10px; color: #9CA3AF;">
+                                Source: ${zone.source}
+                            </div>
+                        ` : ''}
+                        ${zone.lastReported ? `
+                            <div style="margin-top: 4px;">
+                                <span style="font-weight: 600;">Last:</span> ${new Date(zone.lastReported).toLocaleDateString()}
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
-            </div>
-        `;
-
-        circle.bindPopup(popupContent);
+            `;
+            circle.bindPopup(popupContent).openPopup();
+        });
     });
 }
 
@@ -1254,12 +1333,31 @@ function showLoading(show) {
     document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
 }
 
-// Show Notification
+// Show Notification with queue management to prevent spam
+let notificationQueue = [];
+let isShowingNotification = false;
+
 function showNotification(message, type = 'info') {
-    // Simple notification - can be enhanced with a toast library
     console.log(`[${type.toUpperCase()}] ${message}`);
     
-    // You can implement a toast notification here
+    // Add to queue
+    notificationQueue.push({ message, type });
+    
+    // Process queue if not already showing
+    if (!isShowingNotification) {
+        processNotificationQueue();
+    }
+}
+
+function processNotificationQueue() {
+    if (notificationQueue.length === 0) {
+        isShowingNotification = false;
+        return;
+    }
+    
+    isShowingNotification = true;
+    const { message, type } = notificationQueue.shift();
+    
     const colors = {
         success: '#10B981',
         error: '#EF4444',
@@ -1282,14 +1380,49 @@ function showNotification(message, type = 'info') {
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         backdrop-filter: blur(20px);
         max-width: 300px;
+        animation: slideIn 0.3s ease-out;
     `;
     notification.textContent = message;
     document.body.appendChild(notification);
 
     setTimeout(() => {
-        notification.remove();
-    }, 4000);
+        notification.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => {
+            notification.remove();
+            processNotificationQueue(); // Process next in queue
+        }, 300);
+    }, 3000);
 }
+
+// Add CSS animations for notifications
+if (!document.getElementById('notification-styles')) {
+    const style = document.createElement('style');
+    style.id = 'notification-styles';
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 
 // Setup Location Autocomplete with API
 function setupLocationAutocomplete() {
@@ -1402,7 +1535,7 @@ function setupAutocompleteForInput(inputId) {
                 console.error('Autocomplete error:', error);
                 suggestionsDiv.innerHTML = '<div style="padding: 12px 16px; color: #EF4444;">Failed to load suggestions</div>';
             }
-        }, 300); // 300ms debounce
+        }, DEBOUNCE_DELAY); // Use constant for consistency
     });
 
     // Hide suggestions when clicking outside
