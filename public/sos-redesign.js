@@ -482,25 +482,70 @@ function startLocationTracking() {
 
     console.log('[Location] Starting continuous tracking...');
 
-    // Use watchPosition for continuous tracking with high frequency
-    state.locationTracker.watchId = navigator.geolocation.watchPosition(
-        handleLocationUpdate,
-        handleLocationError,
+    // Progressive geolocation strategy: Start with quick location, then improve accuracy
+    let locationAcquired = false;
+
+    // Step 1: Quick location first (fast but less accurate)
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            if (!locationAcquired) {
+                locationAcquired = true;
+                handleLocationUpdate(position);
+                console.log('[Location] Quick location acquired');
+                // Start high accuracy watch in background
+                startHighAccuracyWatch();
+            }
+        },
+        (error) => {
+            console.warn('[Location] Quick location failed, trying high accuracy...', error.message);
+            // If quick fails, try high accuracy immediately
+            tryHighAccuracyLocation();
+        },
         {
-            enableHighAccuracy: true,
-            timeout: 30000, // Increased to 30 seconds
-            maximumAge: 0, // Always get fresh location
+            enableHighAccuracy: false, // Fast mode
+            timeout: 5000, // Only wait 5 seconds
+            maximumAge: 10000 // Accept cached location up to 10 seconds old
         }
     );
-    
-    // Also request immediate location to start faster
+
+    // Fallback: If no location after 8 seconds, force high accuracy
+    setTimeout(() => {
+        if (!locationAcquired) {
+            console.log('[Location] Timeout, forcing high accuracy...');
+            tryHighAccuracyLocation();
+        }
+    }, 8000);
+}
+
+function tryHighAccuracyLocation() {
     navigator.geolocation.getCurrentPosition(
         handleLocationUpdate,
         handleLocationError,
         {
             enableHighAccuracy: true,
-            timeout: 30000, // Increased to 30 seconds
-            maximumAge: 0,
+            timeout: 15000, // 15 seconds for high accuracy
+            maximumAge: 5000 // Accept recent cached location
+        }
+    );
+}
+
+function startHighAccuracyWatch() {
+    // Clear existing watch if any
+    if (state.locationTracker.watchId) {
+        navigator.geolocation.clearWatch(state.locationTracker.watchId);
+    }
+
+    // Use watchPosition for continuous tracking with optimized settings
+    state.locationTracker.watchId = navigator.geolocation.watchPosition(
+        handleLocationUpdate,
+        (error) => {
+            console.warn('[Location] Watch error:', error.message);
+            // Don't spam errors, just log them
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 20000, // 20 seconds timeout
+            maximumAge: 8000 // Allow 8 second old positions for smooth tracking
         }
     );
 }
@@ -520,15 +565,17 @@ function handleLocationUpdate(position) {
         Math.abs(lastCoord.longitude - newCoord.longitude) < 0.000001) {
         console.log('[Location] Duplicate coordinate, skipping...');
         
-        // Request fresh location after 3 seconds
+        // Request fresh location after 3 seconds using progressive strategy
         setTimeout(() => {
             navigator.geolocation.getCurrentPosition(
                 handleLocationUpdate,
-                handleLocationError,
+                (error) => {
+                    console.warn('[Location] Duplicate retry failed:', error.message);
+                },
                 {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0,
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: 5000
                 }
             );
         }, 3000);
@@ -584,13 +631,27 @@ function handleLocationUpdate(position) {
 
 function requestFreshLocation() {
     console.log('[Location] Requesting fresh location...');
+    
+    // Use progressive strategy for fresh location requests too
     navigator.geolocation.getCurrentPosition(
         handleLocationUpdate,
-        handleLocationError,
+        (error) => {
+            console.warn('[Location] Quick fresh location failed, trying high accuracy...', error.message);
+            // Fallback to high accuracy
+            navigator.geolocation.getCurrentPosition(
+                handleLocationUpdate,
+                handleLocationError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 5000
+                }
+            );
+        },
         {
-            enableHighAccuracy: true,
-            timeout: 30000, // Increased to 30 seconds
-            maximumAge: 0,
+            enableHighAccuracy: false, // Quick mode first
+            timeout: 5000,
+            maximumAge: 10000
         }
     );
 }
@@ -617,13 +678,22 @@ function updateGPSStatus() {
 
 function handleLocationError(error) {
     console.error('[Location] Error:', error.message);
-    // Silently handle errors - don't show alerts to user
-    // Just retry after a delay
-    setTimeout(() => {
-        if (state.locationTracker.coordinates.length < 3) {
-            requestFreshLocation();
+    
+    // Only retry if we don't have enough coordinates yet
+    // And don't retry too aggressively to avoid timeout spam
+    if (state.locationTracker.coordinates.length < 3) {
+        const timeSinceLastUpdate = Date.now() - (state.locationTracker.lastUpdate || 0);
+        
+        // Only retry if it's been more than 10 seconds since last update
+        if (timeSinceLastUpdate > 10000) {
+            console.log('[Location] Retrying after error...');
+            setTimeout(() => {
+                requestFreshLocation();
+            }, 3000); // Wait 3 seconds before retry
+        } else {
+            console.log('[Location] Skipping retry, recent update exists');
         }
-    }, 5000);
+    }
 }
 
 function checkStationaryStatus() {
