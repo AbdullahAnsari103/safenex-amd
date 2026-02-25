@@ -416,8 +416,8 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
 
         // If we only got 1 route but requested more, try to get alternatives with different preferences
         // This happens often when avoidance areas are used
-        if (routes.length === 1 && alternatives > 1) {
-            console.log('Only 1 route returned, attempting to fetch alternatives with different preferences...');
+        if (routes.length < 3 && alternatives > 1) {
+            console.log(`Only ${routes.length} route(s) returned, attempting to fetch alternatives with different preferences...`);
             
             try {
                 // Try with 'shortest' preference for a different route
@@ -441,9 +441,9 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                 if (shortestResponse.data.routes && shortestResponse.data.routes.length > 0) {
                     const shortestRoute = shortestResponse.data.routes[0];
                     
-                    // Only add if it's significantly different from the first route
+                    // Only add if it's different from the first route (reduced threshold to 3%)
                     const distanceDiff = Math.abs(shortestRoute.summary.distance - routes[0].distance);
-                    if (distanceDiff > routes[0].distance * 0.05) { // At least 5% different
+                    if (distanceDiff > routes[0].distance * 0.03) { // Reduced from 5% to 3%
                         let coordinates;
                         if (typeof shortestRoute.geometry === 'string') {
                             const decoded = polyline.decode(shortestRoute.geometry);
@@ -499,7 +499,7 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                         // Check if different from existing routes
                         const isDifferent = routes.every(r => {
                             const distanceDiff = Math.abs(fastestRoute.summary.distance - r.distance);
-                            return distanceDiff > r.distance * 0.05;
+                            return distanceDiff > r.distance * 0.03; // Reduced from 5% to 3%
                         });
 
                         if (isDifferent) {
@@ -578,7 +578,7 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                             // Check if different from existing routes
                             const isDifferent = routes.every(r => {
                                 const distanceDiff = Math.abs(altRoute.summary.distance - r.distance);
-                                return distanceDiff > r.distance * 0.05;
+                                return distanceDiff > r.distance * 0.03; // Reduced from 5% to 3%
                             });
 
                             if (isDifferent) {
