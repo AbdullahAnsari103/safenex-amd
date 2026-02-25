@@ -69,7 +69,7 @@ async function geocodeAddress(address) {
             headers: {
                 'Accept': 'application/json'
             },
-            timeout: 10000
+            timeout: 30000 // Increased to 30 seconds
         });
 
         if (response.data.features && response.data.features.length > 0) {
@@ -105,7 +105,7 @@ async function geocodeAddress(address) {
                 'Accept': 'application/json',
                 'User-Agent': 'SafeNex-SafeTrace/1.0' // Required by Nominatim
             },
-            timeout: 10000
+            timeout: 30000 // Increased to 30 seconds
         });
 
         if (response.data && response.data.length > 0) {
@@ -161,7 +161,7 @@ async function reverseGeocode(latitude, longitude) {
             headers: {
                 'Accept': 'application/json'
             },
-            timeout: 10000
+            timeout: 30000 // Increased to 30 seconds
         });
 
         if (response.data.features && response.data.features.length > 0) {
@@ -270,7 +270,7 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
                     'Content-Type': 'application/json',
                     'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
                 },
-                timeout: 20000
+                timeout: 60000 // Increased to 60 seconds for complex routes
             }
         );
 
