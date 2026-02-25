@@ -229,22 +229,24 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         console.warn(`Long distance walking route requested: ${distanceKm.toFixed(1)}km`);
     }
 
-    // Build request body with proper alternative routes configuration
+    // Build request body with optimized alternative routes configuration
     const requestBody = {
         coordinates: [
             [startLng, startLat],
             [endLng, endLat]
         ],
         alternative_routes: {
-            target_count: alternatives,
-            weight_factor: 1.4,
-            share_factor: 0.6
+            target_count: Math.max(alternatives, 3), // Request at least 3 alternatives
+            weight_factor: 1.6, // Increased from 1.4 for more diverse routes
+            share_factor: 0.5   // Decreased from 0.6 to allow more different routes
         },
         elevation: false,
         instructions: true,
         preference: 'recommended',
         geometry_simplify: false,
-        continue_straight: false
+        continue_straight: false,
+        // Request extra routes to ensure we get alternatives
+        extra_info: ['waytype', 'steepness']
     };
 
     // Add avoidance areas if provided (for danger zones)
@@ -282,7 +284,8 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
             hasRoutes: !!response.data.routes,
             routeCount: response.data.routes?.length,
             firstRouteKeys: response.data.routes?.[0] ? Object.keys(response.data.routes[0]) : [],
-            profile: profile
+            profile: profile,
+            requestedAlternatives: alternatives
         });
 
         const routes = response.data.routes.map((route, index) => {
@@ -353,6 +356,123 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
 
             return processedRoute;
         });
+
+        // If we only got 1 route but requested more, try to get alternatives with different preferences
+        if (routes.length === 1 && alternatives > 1 && avoidAreas.length === 0) {
+            console.log('Only 1 route returned, attempting to fetch alternatives with different preferences...');
+            
+            try {
+                // Try with 'shortest' preference for a different route
+                const shortestRequest = {
+                    ...requestBody,
+                    preference: 'shortest',
+                    alternative_routes: undefined // Remove alternative_routes for single route request
+                };
+                
+                const shortestResponse = await axios.post(endpoint, shortestRequest, {
+                    headers: {
+                        'Authorization': OPENROUTE_API_KEY,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                    },
+                    timeout: 60000
+                });
+
+                if (shortestResponse.data.routes && shortestResponse.data.routes.length > 0) {
+                    const shortestRoute = shortestResponse.data.routes[0];
+                    
+                    // Only add if it's significantly different from the first route
+                    const distanceDiff = Math.abs(shortestRoute.summary.distance - routes[0].distance);
+                    if (distanceDiff > routes[0].distance * 0.05) { // At least 5% different
+                        let coordinates;
+                        if (typeof shortestRoute.geometry === 'string') {
+                            const decoded = polyline.decode(shortestRoute.geometry);
+                            coordinates = decoded.map(coord => [coord[1], coord[0]]);
+                        } else if (shortestRoute.geometry.coordinates) {
+                            coordinates = shortestRoute.geometry.coordinates;
+                        }
+
+                        if (coordinates && coordinates.length > 0) {
+                            routes.push({
+                                id: `route_${routes.length}`,
+                                coordinates: coordinates,
+                                distance: shortestRoute.summary.distance,
+                                duration: shortestRoute.summary.duration,
+                                instructions: shortestRoute.segments?.[0]?.steps?.map(step => ({
+                                    instruction: step.instruction,
+                                    distance: step.distance,
+                                    duration: step.duration,
+                                    type: step.type
+                                })) || []
+                            });
+                            console.log('Added shortest route as alternative');
+                        }
+                    }
+                }
+            } catch (altError) {
+                console.warn('Failed to fetch shortest route alternative:', altError.message);
+            }
+
+            // Try with 'fastest' preference if we still need more routes
+            if (routes.length < alternatives) {
+                try {
+                    const fastestRequest = {
+                        ...requestBody,
+                        preference: 'fastest',
+                        alternative_routes: undefined
+                    };
+                    
+                    const fastestResponse = await axios.post(endpoint, fastestRequest, {
+                        headers: {
+                            'Authorization': OPENROUTE_API_KEY,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+                        },
+                        timeout: 60000
+                    });
+
+                    if (fastestResponse.data.routes && fastestResponse.data.routes.length > 0) {
+                        const fastestRoute = fastestResponse.data.routes[0];
+                        
+                        // Check if different from existing routes
+                        const isDifferent = routes.every(r => {
+                            const distanceDiff = Math.abs(fastestRoute.summary.distance - r.distance);
+                            return distanceDiff > r.distance * 0.05;
+                        });
+
+                        if (isDifferent) {
+                            let coordinates;
+                            if (typeof fastestRoute.geometry === 'string') {
+                                const decoded = polyline.decode(fastestRoute.geometry);
+                                coordinates = decoded.map(coord => [coord[1], coord[0]]);
+                            } else if (fastestRoute.geometry.coordinates) {
+                                coordinates = fastestRoute.geometry.coordinates;
+                            }
+
+                            if (coordinates && coordinates.length > 0) {
+                                routes.push({
+                                    id: `route_${routes.length}`,
+                                    coordinates: coordinates,
+                                    distance: fastestRoute.summary.distance,
+                                    duration: fastestRoute.summary.duration,
+                                    instructions: fastestRoute.segments?.[0]?.steps?.map(step => ({
+                                        instruction: step.instruction,
+                                        distance: step.distance,
+                                        duration: step.duration,
+                                        type: step.type
+                                    })) || []
+                                });
+                                console.log('Added fastest route as alternative');
+                            }
+                        }
+                    }
+                } catch (altError) {
+                    console.warn('Failed to fetch fastest route alternative:', altError.message);
+                }
+            }
+        }
+
+        console.log(`Final route count: ${routes.length} routes`);
 
         // Cache the results
         routeCache.set(cacheKey, {
