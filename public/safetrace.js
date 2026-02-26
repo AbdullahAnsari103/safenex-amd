@@ -814,19 +814,8 @@ async function findRoutes() {
     } catch (error) {
         console.error('Route finding error:', error);
         
-        // Enhanced error message with helpful instructions
+        // Show clear error message
         let errorMessage = error.message || 'Failed to find routes';
-        
-        // Add helpful context for "no route found" errors
-        if (errorMessage.includes('No route found') || errorMessage.includes('Route could not be found')) {
-            errorMessage += '\n\n💡 Tips:\n• Try different locations nearby\n• Switch travel mode (Walk/Bike/Car)\n• Check if locations are accessible by road';
-            
-            // If Google Maps fallback also failed, show additional info
-            if (errorMessage.includes('Both routing services')) {
-                errorMessage += '\n• Locations may be too far apart or not connected';
-            }
-        }
-        
         showNotification(errorMessage, 'error');
     } finally {
         showLoading(false);

@@ -16,10 +16,6 @@ const OPENROUTE_API_KEY = process.env.OPENROUTE_API_KEY;
 const OPENROUTE_BASE_URL = 'https://api.openrouteservice.org/v2';
 const GEOCODE_BASE_URL = 'https://api.openrouteservice.org/geocode';
 
-// Mapbox API as fallback for better India coverage (100k free requests/month)
-const MAPBOX_API_KEY = process.env.MAPBOX_API_KEY;
-const MAPBOX_BASE_URL = 'https://api.mapbox.com';
-
 // Cache for geocoding results (1 hour TTL)
 const geocodeCache = new Map();
 const GEOCODE_CACHE_TTL = 60 * 60 * 1000;
@@ -247,102 +243,6 @@ async function reverseGeocode(latitude, longitude) {
     } catch (error) {
         console.error('Reverse geocoding error:', error.message);
         return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-    }
-}
-
-/**
- * Fetch routes from Mapbox Directions API (fallback for India)
- * Free tier: 100,000 requests/month
- */
-async function fetchRoutesFromMapbox(startLat, startLng, endLat, endLng, profile = 'foot-walking', alternatives = 3) {
-    if (!MAPBOX_API_KEY) {
-        throw new Error('Mapbox API key not configured');
-    }
-
-    // Map OpenRouteService profiles to Mapbox profiles
-    const profileMap = {
-        'foot-walking': 'walking',
-        'cycling-regular': 'cycling',
-        'driving-car': 'driving'
-    };
-
-    const mapboxProfile = profileMap[profile] || 'walking';
-
-    console.log(`Fetching routes from Mapbox: [${startLat}, ${startLng}] to [${endLat}, ${endLng}] for ${mapboxProfile}`);
-
-    try {
-        const response = await retryWithBackoff(async () => {
-            // Mapbox format: /directions/v5/{profile}/{coordinates}
-            const coordinates = `${startLng},${startLat};${endLng},${endLat}`;
-            
-            return await axios.get(`${MAPBOX_BASE_URL}/directions/v5/mapbox/${mapboxProfile}/${coordinates}`, {
-                params: {
-                    access_token: MAPBOX_API_KEY,
-                    alternatives: true, // Request up to 3 alternative routes
-                    steps: true, // Include turn-by-turn instructions
-                    geometries: 'polyline', // Use polyline encoding (more efficient)
-                    overview: 'full', // Full geometry
-                    language: 'en' // English instructions
-                },
-                timeout: 30000
-            });
-        });
-
-        if (response.data.code !== 'Ok') {
-            const errorMsg = response.data.message || response.data.code;
-            console.error('Mapbox API error:', errorMsg);
-            
-            if (response.data.code === 'NoRoute') {
-                throw new Error('No route found between these locations');
-            } else if (response.data.code === 'InvalidInput') {
-                throw new Error('Invalid location coordinates');
-            }
-            
-            throw new Error(`Mapbox API error: ${errorMsg}`);
-        }
-
-        if (!response.data.routes || response.data.routes.length === 0) {
-            throw new Error('No routes found');
-        }
-
-        console.log(`Mapbox returned ${response.data.routes.length} route(s)`);
-
-        const routes = response.data.routes.map((route, index) => {
-            // Decode polyline from Mapbox (uses polyline6 encoding by default)
-            const coordinates = polyline.decode(route.geometry, 5) // Mapbox uses precision 5
-                .map(coord => [coord[1], coord[0]]); // Convert [lat, lng] to [lng, lat]
-
-            // Extract instructions from steps
-            const instructions = route.legs[0].steps.map(step => ({
-                instruction: step.maneuver.instruction,
-                distance: step.distance, // meters
-                duration: step.duration, // seconds
-                type: step.maneuver.type
-            }));
-
-            return {
-                id: `route_${index}`,
-                coordinates: coordinates,
-                distance: route.distance, // meters
-                duration: route.duration, // seconds
-                instructions: instructions,
-                source: 'mapbox'
-            };
-        });
-
-        console.log(`Processed ${routes.length} routes from Mapbox`);
-        return routes;
-
-    } catch (error) {
-        console.error('Mapbox routing error:', error.message);
-        
-        if (error.response?.status === 401) {
-            throw new Error('Mapbox API access denied. Check API key configuration.');
-        } else if (error.response?.status === 429) {
-            throw new Error('Mapbox API rate limit exceeded.');
-        }
-        
-        throw error;
     }
 }
 
@@ -764,41 +664,17 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
     } catch (error) {
         console.error('OpenRouteService error:', error.response?.data || error.message);
         
-        // Check if this is a "no route found" error - try Mapbox fallback
-        const isNoRouteError = 
-            error.response?.status === 404 ||
-            (error.response?.data?.error?.message && error.response.data.error.message.includes('Route could not be found'));
-        
-        if (isNoRouteError && MAPBOX_API_KEY) {
-            console.log('OpenRouteService failed to find route, trying Mapbox fallback...');
-            try {
-                const mapboxRoutes = await fetchRoutesFromMapbox(startLat, startLng, endLat, endLng, profile, alternatives);
-                
-                // Cache the Mapbox results
-                console.log(`Caching Mapbox routes with key: ${cacheKey}`);
-                routeCache.set(cacheKey, {
-                    data: mapboxRoutes,
-                    timestamp: Date.now(),
-                    metadata: {
-                        start: [startLat, startLng],
-                        end: [endLat, endLng],
-                        profile: profile,
-                        source: 'mapbox-fallback'
-                    }
-                });
-                
-                return mapboxRoutes;
-            } catch (mapboxError) {
-                console.error('Mapbox fallback also failed:', mapboxError.message);
-                throw new Error('No route found between these locations. Both routing services could not find a path. Try different locations or travel mode.');
-            }
-        }
-        
-        // Handle other OpenRouteService errors
+        // Handle OpenRouteService errors with helpful messages
         if (error.response?.status === 401) {
             throw new Error('Invalid API key configuration');
         } else if (error.response?.status === 429) {
             throw new Error('API rate limit exceeded. Please try again in a few minutes.');
+        } else if (error.response?.status === 404) {
+            const errorMsg = error.response?.data?.error?.message || '';
+            if (errorMsg.includes('Route could not be found')) {
+                throw new Error('No route found. OpenRouteService has limited road data for this area. Try: (1) Different nearby locations, (2) Different travel mode, or (3) Shorter distances.');
+            }
+            throw new Error('Route not found. Please try different locations.');
         } else if (error.response?.status === 400) {
             const errorMsg = error.response?.data?.error?.message || '';
             if (errorMsg.includes('distance must not be greater than')) {
