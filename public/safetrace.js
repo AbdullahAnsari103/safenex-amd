@@ -643,14 +643,29 @@ function updateRemainingRoute(remainingCoordinates) {
 async function findRoutes() {
     const startInput = document.getElementById('startInput');
     const destInput = document.getElementById('destInput');
+    const findBtn = document.getElementById('findRoutesBtn');
+    
     const startValue = startInput.value.trim();
     const destValue = destInput.value.trim();
 
+    // Validation
     if (!destValue) {
         showNotification('Please enter a destination', 'error');
         return;
     }
 
+    // Prevent duplicate requests
+    if (findBtn && findBtn.disabled) {
+        console.log('Route finding already in progress');
+        return;
+    }
+
+    // Disable button and show loading
+    if (findBtn) {
+        findBtn.disabled = true;
+        findBtn.textContent = 'Finding Routes...';
+    }
+    
     showLoading(true);
 
     try {
@@ -666,6 +681,12 @@ async function findRoutes() {
                 // Direct coordinates provided
                 startLat = parseFloat(coordMatch[1]);
                 startLng = parseFloat(coordMatch[2]);
+                
+                // Validate coordinates
+                if (isNaN(startLat) || isNaN(startLng) || startLat < -90 || startLat > 90 || startLng < -180 || startLng > 180) {
+                    throw new Error('Invalid start coordinates. Latitude must be between -90 and 90, longitude between -180 and 180.');
+                }
+                
                 console.log('Using coordinate input:', startLat, startLng);
             } else {
                 // Address string - geocode it
@@ -674,6 +695,11 @@ async function findRoutes() {
                         method: 'POST',
                         body: JSON.stringify({ address: startValue })
                     });
+                    
+                    if (!startGeocodeResponse || !startGeocodeResponse.data) {
+                        throw new Error('Could not find starting location');
+                    }
+                    
                     const startLocation = startGeocodeResponse.data;
                     startLat = startLocation.latitude;
                     startLng = startLocation.longitude;
@@ -814,11 +840,24 @@ async function findRoutes() {
     } catch (error) {
         console.error('Route finding error:', error);
         
-        // Show clear error message
+        // Show clear, user-friendly error message
         let errorMessage = error.message || 'Failed to find routes';
+        
+        // Truncate very long error messages
+        if (errorMessage.length > 300) {
+            errorMessage = errorMessage.substring(0, 297) + '...';
+        }
+        
         showNotification(errorMessage, 'error');
     } finally {
         showLoading(false);
+        
+        // Re-enable find routes button
+        const findBtn = document.getElementById('findRoutesBtn');
+        if (findBtn) {
+            findBtn.disabled = false;
+            findBtn.textContent = 'Find Routes';
+        }
     }
 }
 

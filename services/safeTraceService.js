@@ -6,6 +6,7 @@
  * - Risk score calculation based on danger zones
  * - Route comparison and optimization
  * - Intelligent caching and performance optimization
+ * - Robust error handling for production deployment
  */
 
 const axios = require('axios');
@@ -16,36 +17,76 @@ const OPENROUTE_API_KEY = process.env.OPENROUTE_API_KEY;
 const OPENROUTE_BASE_URL = 'https://api.openrouteservice.org/v2';
 const GEOCODE_BASE_URL = 'https://api.openrouteservice.org/geocode';
 
+// Validate API key on startup
+if (!OPENROUTE_API_KEY) {
+    console.error('⚠️  WARNING: OPENROUTE_API_KEY not configured. SafeTrace routing will not work.');
+}
+
 // Cache for geocoding results (1 hour TTL)
 const geocodeCache = new Map();
 const GEOCODE_CACHE_TTL = 60 * 60 * 1000;
 
-// Cache for routes (30 seconds TTL for testing, increase in production)
+// Cache for routes (5 minutes TTL in production for better performance)
 const routeCache = new Map();
-const ROUTE_CACHE_TTL = 30 * 1000; // 30 seconds
+const ROUTE_CACHE_TTL = process.env.NODE_ENV === 'production' ? 5 * 60 * 1000 : 30 * 1000;
 
-// Clear cache periodically to prevent stale data
+// Clear cache periodically to prevent memory leaks
 setInterval(() => {
     const now = Date.now();
+    
+    // Clear expired route cache
     for (const [key, value] of routeCache.entries()) {
         if (now - value.timestamp > ROUTE_CACHE_TTL) {
             routeCache.delete(key);
         }
     }
+    
+    // Clear expired geocode cache
     for (const [key, value] of geocodeCache.entries()) {
         if (now - value.timestamp > GEOCODE_CACHE_TTL) {
             geocodeCache.delete(key);
         }
     }
+    
+    // Prevent cache from growing too large (max 1000 entries each)
+    if (routeCache.size > 1000) {
+        const entriesToDelete = Array.from(routeCache.keys()).slice(0, 500);
+        entriesToDelete.forEach(key => routeCache.delete(key));
+        console.log('Route cache pruned to prevent memory issues');
+    }
+    
+    if (geocodeCache.size > 1000) {
+        const entriesToDelete = Array.from(geocodeCache.keys()).slice(0, 500);
+        entriesToDelete.forEach(key => geocodeCache.delete(key));
+        console.log('Geocode cache pruned to prevent memory issues');
+    }
 }, 60 * 1000); // Clean every minute
 
 // Rate limiting
 let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 100; // 100ms between requests
+const MIN_REQUEST_INTERVAL = 150; // 150ms between requests (safer for production)
 
 // Retry configuration
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // 2 seconds
+const MAX_RETRIES = 2; // Reduced to 2 for faster failure
+const RETRY_DELAY = 1500; // 1.5 seconds
+
+/**
+ * Validate coordinates
+ */
+function validateCoordinates(lat, lng, paramName = 'coordinate') {
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        throw new Error(`Invalid ${paramName}: must be numbers`);
+    }
+    if (isNaN(lat) || isNaN(lng)) {
+        throw new Error(`Invalid ${paramName}: contains NaN`);
+    }
+    if (lat < -90 || lat > 90) {
+        throw new Error(`Invalid ${paramName}: latitude must be between -90 and 90`);
+    }
+    if (lng < -180 || lng > 180) {
+        throw new Error(`Invalid ${paramName}: longitude must be between -180 and 180`);
+    }
+}
 
 /**
  * Retry helper function with exponential backoff
@@ -64,6 +105,7 @@ async function retryWithBackoff(fn, retries = MAX_RETRIES, delay = RETRY_DELAY) 
             error.code === 'ECONNABORTED' ||
             error.code === 'ENOTFOUND' ||
             error.code === 'ECONNRESET' ||
+            error.code === 'ENETUNREACH' ||
             (error.response && error.response.status >= 500);
         
         if (!isRetryable) {
@@ -74,7 +116,7 @@ async function retryWithBackoff(fn, retries = MAX_RETRIES, delay = RETRY_DELAY) 
         await new Promise(resolve => setTimeout(resolve, delay));
         
         // Exponential backoff
-        return retryWithBackoff(fn, retries - 1, delay * 2);
+        return retryWithBackoff(fn, retries - 1, delay * 1.5);
     }
 }
 // Severity weights for risk calculation
@@ -251,8 +293,24 @@ async function reverseGeocode(latitude, longitude) {
  * @param {string} profile - Travel mode: 'foot-walking', 'cycling-regular', 'driving-car'
  */
 async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-walking', alternatives = 3, avoidAreas = []) {
+    // Validate API key
     if (!OPENROUTE_API_KEY) {
-        throw new Error('OpenRouteService API key not configured');
+        throw new Error('OpenRouteService API key not configured. Please add OPENROUTE_API_KEY to environment variables.');
+    }
+
+    // Validate coordinates
+    try {
+        validateCoordinates(startLat, startLng, 'start location');
+        validateCoordinates(endLat, endLng, 'end location');
+    } catch (error) {
+        throw new Error(`Invalid coordinates: ${error.message}`);
+    }
+
+    // Validate profile
+    const validProfiles = ['foot-walking', 'cycling-regular', 'driving-car'];
+    if (!validProfiles.includes(profile)) {
+        console.warn(`Invalid profile "${profile}", defaulting to "foot-walking"`);
+        profile = 'foot-walking';
     }
 
     // Check cache first - include travel mode AND avoidance areas in cache key
@@ -260,7 +318,7 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
     const cacheKey = `${startLat.toFixed(5)},${startLng.toFixed(5)}-${endLat.toFixed(5)},${endLng.toFixed(5)}-${profile}${avoidKey}`;
     const cached = routeCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < ROUTE_CACHE_TTL) {
-        console.log(`Returning cached routes for ${profile} (cache key: ${cacheKey})`);
+        console.log(`✓ Returning cached routes for ${profile}`);
         return cached.data;
     }
 
@@ -289,9 +347,20 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         throw new Error(`Destination is too far (${distanceKm.toFixed(1)}km). ${profile} routes are limited to ${maxDistance}km.`);
     }
     
+    // Minimum distance check (avoid routes < 10 meters)
+    if (distanceKm < 0.01) {
+        throw new Error('Start and end locations are too close. Please select locations at least 10 meters apart.');
+    }
+    
     // Warn if distance is very long
     if (distanceKm > 50 && profile === 'foot-walking') {
-        console.warn(`Long distance walking route requested: ${distanceKm.toFixed(1)}km`);
+        console.warn(`⚠️  Long distance walking route requested: ${distanceKm.toFixed(1)}km`);
+    }
+
+    // Limit avoidance areas to prevent API overload
+    if (avoidAreas.length > 20) {
+        console.warn(`Too many avoidance areas (${avoidAreas.length}), limiting to 20`);
+        avoidAreas = avoidAreas.slice(0, 20);
     }
 
     // Build request body with optimized alternative routes configuration
@@ -301,9 +370,9 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
             [endLng, endLat]
         ],
         alternative_routes: {
-            target_count: Math.max(alternatives, 3), // Request at least 3 alternatives
-            weight_factor: 1.6, // Increased from 1.4 for more diverse routes
-            share_factor: 0.5   // Decreased from 0.6 to allow more different routes
+            target_count: Math.min(Math.max(alternatives, 2), 3), // Between 2-3 alternatives
+            weight_factor: 1.6,
+            share_factor: 0.5
         },
         elevation: false,
         instructions: true,
@@ -665,29 +734,47 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
         console.error('OpenRouteService error:', error.response?.data || error.message);
         
         // Handle OpenRouteService errors with helpful messages
-        if (error.response?.status === 401) {
-            throw new Error('Invalid API key configuration');
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            throw new Error('API authentication failed. Please check OPENROUTE_API_KEY configuration.');
         } else if (error.response?.status === 429) {
-            throw new Error('API rate limit exceeded. Please try again in a few minutes.');
+            throw new Error('API rate limit exceeded (2,000 requests/day). Please try again in a few minutes.');
         } else if (error.response?.status === 404) {
             const errorMsg = error.response?.data?.error?.message || '';
             if (errorMsg.includes('Route could not be found')) {
-                throw new Error('No route found. OpenRouteService has limited road data for this area. Try: (1) Different nearby locations, (2) Different travel mode, or (3) Shorter distances.');
+                // Provide helpful guidance for no route found
+                const suggestions = [
+                    'OpenRouteService has limited road data for this area',
+                    'Try selecting locations closer together',
+                    'Try a different travel mode (Walk/Bike/Car)',
+                    'Ensure both locations are accessible by road'
+                ];
+                throw new Error(`No route found. ${suggestions.join('. ')}.`);
             }
             throw new Error('Route not found. Please try different locations.');
         } else if (error.response?.status === 400) {
             const errorMsg = error.response?.data?.error?.message || '';
             if (errorMsg.includes('distance must not be greater than')) {
-                throw new Error('Destination is too far for walking routes. Please choose a closer location (within 150km).');
+                throw new Error('Destination is too far. Please choose a closer location.');
+            }
+            if (errorMsg.includes('coordinates')) {
+                throw new Error('Invalid location coordinates. Please select valid locations on the map.');
             }
             throw new Error('Invalid route request. Please check your start and end locations.');
+        } else if (error.response?.status === 413) {
+            throw new Error('Request too large. Try reducing the number of waypoints or avoidance areas.');
+        } else if (error.response?.status >= 500) {
+            throw new Error('OpenRouteService is temporarily unavailable. Please try again in a moment.');
         } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-            throw new Error('Request timed out. The routing service may be slow or unavailable. Please try again in a moment.');
-        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNRESET') {
+            throw new Error('Request timed out. The routing service may be slow. Please try again.');
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNRESET' || error.code === 'ENETUNREACH') {
             throw new Error('Network error. Please check your internet connection and try again.');
+        } else if (error.message && error.message.includes('Invalid coordinates')) {
+            throw error; // Re-throw validation errors as-is
         }
         
-        throw new Error(`Failed to fetch routes: ${error.message}`);
+        // Generic error with helpful message
+        const errorMessage = error.message || 'Unknown error occurred';
+        throw new Error(`Failed to fetch routes: ${errorMessage}. Please try again or contact support if the issue persists.`);
     }
 }
 
@@ -981,82 +1068,148 @@ function isWithinActiveHours(currentHour, activeHours) {
  * @param {string} profile - Travel mode: 'foot-walking', 'cycling-regular', 'driving-car'
  */
 async function getOptimizedRoutes(startLat, startLng, endLat, endLng, profile = 'foot-walking') {
-    // First, get critical danger zones to avoid
-    const boundingBox = [
-        [startLng, startLat],
-        [endLng, endLat]
-    ];
-    
-    // Fetch verified danger zones in the area
-    const verifiedZonesPreview = await getVerifiedDangerZonesAlongRoute(boundingBox, 2.0);
-    
-    // Create avoidance polygons for critical zones only
-    const avoidAreas = verifiedZonesPreview
-        .filter(zone => zone.riskLevel === 'Critical' || zone.riskLevel === 'High')
-        .map(zone => {
-            // Create a square polygon around the danger zone
-            const radiusInDegrees = zone.radius / 111320; // Convert meters to degrees (approximate)
-            return [
-                [zone.longitude - radiusInDegrees, zone.latitude - radiusInDegrees],
-                [zone.longitude + radiusInDegrees, zone.latitude - radiusInDegrees],
-                [zone.longitude + radiusInDegrees, zone.latitude + radiusInDegrees],
-                [zone.longitude - radiusInDegrees, zone.latitude + radiusInDegrees],
-                [zone.longitude - radiusInDegrees, zone.latitude - radiusInDegrees] // Close the polygon
-            ];
-        })
-        .slice(0, 20); // Limit to 20 avoidance areas to prevent API overload
+    // Validate inputs
+    try {
+        validateCoordinates(startLat, startLng, 'start location');
+        validateCoordinates(endLat, endLng, 'end location');
+    } catch (error) {
+        throw new Error(`Invalid coordinates: ${error.message}`);
+    }
 
-    console.log(`Found ${verifiedZonesPreview.length} verified zones, avoiding ${avoidAreas.length} critical/high risk areas`);
+    let verifiedZonesPreview = [];
+    let avoidAreas = [];
+
+    // Try to fetch danger zones, but don't fail if database is unavailable
+    try {
+        const boundingBox = [
+            [startLng, startLat],
+            [endLng, endLat]
+        ];
+        
+        // Fetch verified danger zones in the area with timeout
+        const zonesPromise = getVerifiedDangerZonesAlongRoute(boundingBox, 2.0);
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database timeout')), 5000)
+        );
+        
+        verifiedZonesPreview = await Promise.race([zonesPromise, timeoutPromise]);
+        
+        // Create avoidance polygons for critical zones only
+        avoidAreas = verifiedZonesPreview
+            .filter(zone => zone && zone.riskLevel && (zone.riskLevel === 'Critical' || zone.riskLevel === 'High'))
+            .map(zone => {
+                // Create a square polygon around the danger zone
+                const radiusInDegrees = (zone.radius || 100) / 111320; // Convert meters to degrees
+                return [
+                    [zone.longitude - radiusInDegrees, zone.latitude - radiusInDegrees],
+                    [zone.longitude + radiusInDegrees, zone.latitude - radiusInDegrees],
+                    [zone.longitude + radiusInDegrees, zone.latitude + radiusInDegrees],
+                    [zone.longitude - radiusInDegrees, zone.latitude + radiusInDegrees],
+                    [zone.longitude - radiusInDegrees, zone.latitude - radiusInDegrees] // Close the polygon
+                ];
+            })
+            .slice(0, 20); // Limit to 20 avoidance areas
+
+        console.log(`✓ Found ${verifiedZonesPreview.length} verified zones, avoiding ${avoidAreas.length} critical/high risk areas`);
+    } catch (dbError) {
+        console.warn('⚠️  Could not fetch danger zones from database:', dbError.message);
+        console.log('Continuing with route calculation without danger zone avoidance');
+        // Continue without danger zone avoidance
+    }
 
     // Fetch multiple route alternatives with avoidance
     const routes = await fetchRoutes(startLat, startLng, endLat, endLng, profile, 3, avoidAreas);
 
     // Validate routes
-    if (!routes || routes.length === 0) {
-        throw new Error('No routes found');
+    if (!routes || !Array.isArray(routes) || routes.length === 0) {
+        throw new Error('No routes found between these locations');
     }
 
-    // Get danger zones along all routes
-    const allCoordinates = routes
-        .filter(r => r && r.coordinates && Array.isArray(r.coordinates))
-        .flatMap(r => r.coordinates);
-    
-    console.log('Total coordinates for danger zone check:', allCoordinates.length);
-    
-    // Fetch both user-reported and verified danger zones
-    const [userDangerZones, verifiedDangerZones] = await Promise.all([
-        getDangerZonesAlongRoute(allCoordinates, 0.5),
-        getVerifiedDangerZonesAlongRoute(allCoordinates, 0.5)
-    ]);
+    // Get danger zones along all routes (with error handling)
+    let userDangerZones = [];
+    let verifiedDangerZones = [];
 
-    console.log(`Found ${userDangerZones.length} user-reported zones and ${verifiedDangerZones.length} verified zones`);
+    try {
+        const allCoordinates = routes
+            .filter(r => r && r.coordinates && Array.isArray(r.coordinates))
+            .flatMap(r => r.coordinates);
+        
+        if (allCoordinates.length === 0) {
+            throw new Error('No valid route coordinates found');
+        }
+
+        console.log(`Checking ${allCoordinates.length} coordinates for danger zones`);
+        
+        // Fetch both user-reported and verified danger zones with timeout
+        const zonesPromise = Promise.all([
+            getDangerZonesAlongRoute(allCoordinates, 0.5).catch(err => {
+                console.warn('Failed to fetch user danger zones:', err.message);
+                return [];
+            }),
+            getVerifiedDangerZonesAlongRoute(allCoordinates, 0.5).catch(err => {
+                console.warn('Failed to fetch verified danger zones:', err.message);
+                return [];
+            })
+        ]);
+
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Database timeout')), 8000)
+        );
+
+        [userDangerZones, verifiedDangerZones] = await Promise.race([zonesPromise, timeoutPromise]);
+
+        console.log(`✓ Found ${userDangerZones.length} user-reported zones and ${verifiedDangerZones.length} verified zones`);
+    } catch (dbError) {
+        console.warn('⚠️  Could not fetch danger zones for risk analysis:', dbError.message);
+        console.log('Continuing with routes without risk analysis');
+        // Continue without danger zone data
+    }
 
     // Calculate risk for each route with both zone types
-    const analyzedRoutes = routes.map(route => {
-        const riskAnalysis = calculateRouteRiskWithVerifiedZones(route, userDangerZones, verifiedDangerZones);
-        
-        // Format duration based on travel mode
-        let durationMin = Math.round(route.duration / 60);
-        let durationDisplay = durationMin;
-        
-        // For longer durations, show hours
-        if (durationMin >= 60) {
-            const hours = Math.floor(durationMin / 60);
-            const mins = durationMin % 60;
-            durationDisplay = `${hours}h ${mins}m`;
-        } else {
-            durationDisplay = `${durationMin} min`;
+    const analyzedRoutes = routes.map((route, index) => {
+        try {
+            const riskAnalysis = calculateRouteRiskWithVerifiedZones(route, userDangerZones, verifiedDangerZones);
+            
+            // Format duration based on travel mode
+            let durationMin = Math.round((route.duration || 0) / 60);
+            let durationDisplay = durationMin;
+            
+            // For longer durations, show hours
+            if (durationMin >= 60) {
+                const hours = Math.floor(durationMin / 60);
+                const mins = durationMin % 60;
+                durationDisplay = `${hours}h ${mins}m`;
+            } else {
+                durationDisplay = `${durationMin} min`;
+            }
+            
+            return {
+                ...route,
+                risk: riskAnalysis,
+                distanceKm: ((route.distance || 0) / 1000).toFixed(2),
+                durationMin: durationMin,
+                durationDisplay: durationDisplay,
+                dangerZoneCount: riskAnalysis.affectedZones.length,
+                travelMode: profile
+            };
+        } catch (error) {
+            console.error(`Error analyzing route ${index}:`, error.message);
+            // Return route with default risk values
+            return {
+                ...route,
+                risk: {
+                    totalRisk: 0,
+                    riskLevel: 'unknown',
+                    affectedZones: [],
+                    riskFactors: []
+                },
+                distanceKm: ((route.distance || 0) / 1000).toFixed(2),
+                durationMin: Math.round((route.duration || 0) / 60),
+                durationDisplay: `${Math.round((route.duration || 0) / 60)} min`,
+                dangerZoneCount: 0,
+                travelMode: profile
+            };
         }
-        
-        return {
-            ...route,
-            risk: riskAnalysis,
-            distanceKm: (route.distance / 1000).toFixed(2),
-            durationMin: durationMin,
-            durationDisplay: durationDisplay,
-            dangerZoneCount: riskAnalysis.affectedZones.length,
-            travelMode: profile
-        };
     });
 
     // Sort by multiple criteria for best recommendation:
