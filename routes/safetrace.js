@@ -43,7 +43,7 @@ function getTravelModeName(mode) {
  */
 router.post('/geocode', protect, async (req, res, next) => {
     try {
-        const { address } = req.body;
+        const { address, returnMultiple = false } = req.body;
 
         if (!address || typeof address !== 'string' || address.trim().length === 0) {
             return res.status(400).json({
@@ -52,7 +52,7 @@ router.post('/geocode', protect, async (req, res, next) => {
             });
         }
 
-        const result = await geocodeAddress(address.trim());
+        const result = await geocodeAddress(address.trim(), returnMultiple);
 
         res.json({
             success: true,

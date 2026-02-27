@@ -97,14 +97,17 @@ const CATEGORY_MULTIPLIERS = {
 
 /**
  * Geocode an address to coordinates using Nominatim (OpenStreetMap) as fallback
+ * Returns multiple results for user to choose from
  */
-async function geocodeAddress(address) {
-    // Check cache
-    const cacheKey = address.toLowerCase().trim();
-    const cached = geocodeCache.get(cacheKey);
-    
-    if (cached && Date.now() - cached.timestamp < GEOCODE_CACHE_TTL) {
-        return cached.data;
+async function geocodeAddress(address, returnMultiple = false) {
+    // Check cache (only for single result requests)
+    if (!returnMultiple) {
+        const cacheKey = address.toLowerCase().trim();
+        const cached = geocodeCache.get(cacheKey);
+        
+        if (cached && Date.now() - cached.timestamp < GEOCODE_CACHE_TTL) {
+            return cached.data;
+        }
     }
 
     // Try OpenRouteService first with retry logic
@@ -114,7 +117,7 @@ async function geocodeAddress(address) {
                 params: {
                     api_key: OPENROUTE_API_KEY,
                     text: address,
-                    size: 1
+                    size: returnMultiple ? 5 : 1
                 },
                 headers: {
                     'Accept': 'application/json'
@@ -123,21 +126,33 @@ async function geocodeAddress(address) {
             });
 
             if (response.data.features && response.data.features.length > 0) {
-                const feature = response.data.features[0];
-                return {
-                    latitude: feature.geometry.coordinates[1],
-                    longitude: feature.geometry.coordinates[0],
-                    address: feature.properties.label
-                };
+                if (returnMultiple) {
+                    return response.data.features.map(feature => ({
+                        latitude: feature.geometry.coordinates[1],
+                        longitude: feature.geometry.coordinates[0],
+                        address: feature.properties.label,
+                        confidence: feature.properties.confidence || 0
+                    }));
+                } else {
+                    const feature = response.data.features[0];
+                    return {
+                        latitude: feature.geometry.coordinates[1],
+                        longitude: feature.geometry.coordinates[0],
+                        address: feature.properties.label
+                    };
+                }
             }
             throw new Error('No results found');
         });
 
-        // Cache result
-        geocodeCache.set(cacheKey, {
-            data: result,
-            timestamp: Date.now()
-        });
+        // Cache result (only for single result)
+        if (!returnMultiple) {
+            const cacheKey = address.toLowerCase().trim();
+            geocodeCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+        }
 
         return result;
     } catch (error) {
@@ -150,10 +165,12 @@ async function geocodeAddress(address) {
             params: {
                 q: address,
                 format: 'json',
-                limit: 5,
+                limit: returnMultiple ? 5 : 5, // Always get 5 to filter better
                 addressdetails: 1,
                 countrycodes: 'in', // Limit to India
-                'accept-language': 'en'
+                'accept-language': 'en',
+                bounded: 1, // Prefer results within viewbox
+                viewbox: '72.7,19.3,73.1,18.9' // Mumbai bounding box (rough)
             },
             headers: {
                 'Accept': 'application/json',
@@ -165,22 +182,69 @@ async function geocodeAddress(address) {
         if (response.data && response.data.length > 0) {
             console.log(`Nominatim returned ${response.data.length} results for "${address}"`);
             
-            // Use the best result (first one, as Nominatim ranks by relevance)
-            const bestResult = response.data[0];
+            // Filter and score results for better accuracy
+            const scoredResults = response.data.map(result => {
+                let score = parseFloat(result.importance || 0);
+                
+                // Boost score if address contains key search terms
+                const searchTerms = address.toLowerCase().split(/[\s,]+/);
+                const resultAddress = result.display_name.toLowerCase();
+                
+                searchTerms.forEach(term => {
+                    if (term.length > 2 && resultAddress.includes(term)) {
+                        score += 0.2;
+                    }
+                });
+                
+                // Boost if it's a specific place (not just a region)
+                if (result.type === 'road' || result.type === 'building' || result.type === 'amenity') {
+                    score += 0.3;
+                }
+                
+                // Penalize if it's just a suburb/city without specific location
+                if (result.type === 'suburb' || result.type === 'city' || result.type === 'state') {
+                    score -= 0.2;
+                }
+                
+                return {
+                    ...result,
+                    score: score
+                };
+            });
+            
+            // Sort by score (highest first)
+            scoredResults.sort((a, b) => b.score - a.score);
+            
+            if (returnMultiple) {
+                return scoredResults.slice(0, 5).map(result => ({
+                    latitude: parseFloat(result.lat),
+                    longitude: parseFloat(result.lon),
+                    address: result.display_name,
+                    type: result.type,
+                    score: result.score
+                }));
+            }
+            
+            // Use the best scored result
+            const bestResult = scoredResults[0];
             
             const result = {
                 latitude: parseFloat(bestResult.lat),
                 longitude: parseFloat(bestResult.lon),
-                address: bestResult.display_name
+                address: bestResult.display_name,
+                type: bestResult.type
             };
 
             console.log('Selected geocoding result:', {
                 address: result.address,
                 latitude: result.latitude,
-                longitude: result.longitude
+                longitude: result.longitude,
+                type: result.type,
+                score: bestResult.score
             });
 
             // Cache result
+            const cacheKey = address.toLowerCase().trim();
             geocodeCache.set(cacheKey, {
                 data: result,
                 timestamp: Date.now()

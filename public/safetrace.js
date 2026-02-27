@@ -716,12 +716,21 @@ async function findRoutes() {
         // Geocode destination
         const geocodeResponse = await apiCall('/geocode', {
             method: 'POST',
-            body: JSON.stringify({ address: destValue })
+            body: JSON.stringify({ address: destValue, returnMultiple: false })
         });
 
         const destination = geocodeResponse.data;
         console.log('Destination geocoded:', destValue, '->', destination.latitude, destination.longitude);
         console.log('Full destination object:', destination);
+
+        // Show confirmation with the actual address found
+        const confirmMessage = `Found location:\n\n${destination.address}\n\nIs this the correct destination?`;
+        
+        if (!confirm(confirmMessage)) {
+            showNotification('Please enter a more specific address', 'info');
+            showLoading(false);
+            return;
+        }
 
         // Calculate distance
         const distance = calculateDistanceKm(
