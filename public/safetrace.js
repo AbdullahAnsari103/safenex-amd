@@ -925,7 +925,6 @@ async function findRoutes() {
         // Use only valid routes
         routesResponse.data.routes = validRoutes;
 
-        routes = routesResponse.data.routes;
         const dangerZones = routesResponse.data.dangerZones || [];
 
         console.log('Routes received:', validRoutes.length);
