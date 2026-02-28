@@ -857,7 +857,7 @@ async function findRoutes() {
         }
 
         // CRITICAL VALIDATION: Verify routes actually go to intended destination
-        const routes = routesResponse.data.routes;
+        routes = routesResponse.data.routes; // ✅ Assign to GLOBAL routes, not const
         let validRoutes = [];
         
         for (const route of routes) {
@@ -924,6 +924,7 @@ async function findRoutes() {
         
         // Use only valid routes
         routesResponse.data.routes = validRoutes;
+        routes = validRoutes; // ✅ Sync back to global routes array
 
         const dangerZones = routesResponse.data.dangerZones || [];
 
@@ -1137,6 +1138,7 @@ function drawRoute(route) {
 
 // Display Danger Zones with performance optimization
 function displayDangerZones(zones) {
+    allDangerZones = zones || []; // ✅ Store zones for proximity checking
     if (!dangerZoneLayer) return;
 
     dangerZoneLayer.clearLayers();
@@ -1913,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Start location tracking automatically
     console.log('Starting automatic location tracking...');
-    requestUserLocation();
+    startLocationTracking(); // ✅ Use existing function instead of non-existent requestUserLocation
     
     // Mobile-specific enhancements
     if (window.innerWidth <= 768) {
@@ -2382,42 +2384,12 @@ function startProximityMonitoring() {
     checkDangerZoneProximity();
 }
 
-// Update user location and check proximity
-function updateUserLocation(lat, lng) {
+// Update proximity location and check danger zones
+function updateProximityLocation(lat, lng) {
     userCurrentLocation = { lat, lng };
     checkDangerZoneProximity();
 }
 
-// Store danger zones when loaded
-const originalDisplayDangerZones = displayDangerZones;
-displayDangerZones = function(zones) {
-    allDangerZones = zones || [];
-    originalDisplayDangerZones(zones);
-    
-    // Start monitoring if we have user location
-    if (userCurrentLocation) {
-        checkDangerZoneProximity();
-    }
-};
+// ✅ Removed monkey-patch - allDangerZones now stored directly in displayDangerZones()
 
-// Watch user location continuously
-if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(
-        (position) => {
-            updateUserLocation(position.coords.latitude, position.coords.longitude);
-            
-            // Start monitoring if not already started
-            if (!proximityCheckInterval) {
-                startProximityMonitoring();
-            }
-        },
-        (error) => {
-            console.error('Location watch error:', error);
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 10000,
-            timeout: 5000
-        }
-    );
-}
+// ✅ Removed zombie watchPosition - location tracking handled by startHighAccuracyWatch()
