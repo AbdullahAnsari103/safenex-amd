@@ -445,44 +445,31 @@ function useMyLocation() {
         handleGeolocationError(error);
     };
 
-    // Step 1: Try quick location first (fast)
+    // ✅ BUG 10 FIX: Single attempt — clean, no concurrent requests, no battery drain
+    const fallbackTimer = setTimeout(() => {
+        if (!locationAcquired) {
+            handleLocationError({ code: 3, message: 'Location timeout' });
+        }
+    }, 12000);
+
+    const originalSuccess = handleLocationSuccess;
+    const wrappedSuccess = (position) => {
+        clearTimeout(fallbackTimer);
+        originalSuccess(position);
+    };
+
     navigator.geolocation.getCurrentPosition(
-        handleLocationSuccess,
+        wrappedSuccess,
         (error) => {
-            console.warn('Quick location failed, trying high accuracy...', error);
-            // Step 2: Try high accuracy if quick fails
-            navigator.geolocation.getCurrentPosition(
-                handleLocationSuccess,
-                handleLocationError,
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 5000
-                }
-            );
+            clearTimeout(fallbackTimer);
+            handleLocationError(error);
         },
         {
-            enableHighAccuracy: false,
-            timeout: 5000,
-            maximumAge: 30000
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 10000
         }
     );
-
-    // Fallback: If no location after 8 seconds, try high accuracy
-    setTimeout(() => {
-        if (!locationAcquired) {
-            console.log('Location timeout, trying high accuracy fallback...');
-            navigator.geolocation.getCurrentPosition(
-                handleLocationSuccess,
-                handleLocationError,
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 5000
-                }
-            );
-        }
-    }, 8000);
 }
 
 // Update User Location
@@ -1197,7 +1184,7 @@ function displayDangerZones(zones) {
 
         // Draw circle
         const circle = L.circle([zone.latitude, zone.longitude], {
-            radius: zone.radius,
+            radius: zone.radius || zone.radius_meters || 200, // ✅ BUG 7 FIX: Normalize field names
             color: color,
             fillColor: color,
             fillOpacity: fillOpacity,
@@ -1485,7 +1472,7 @@ async function loadRouteHistory() {
 
     try {
         const response = await apiCall('/history');
-        const history = response.data.history;
+        const history = response?.data?.history || []; // ✅ BUG 9 FIX: Safe access with fallback
 
         const historyList = document.getElementById('historyList');
 
@@ -1937,6 +1924,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadRouteHistory();
     loadAllDangerZones(); // Load verified danger zones on map
     setupLocationAutocomplete();
+    startProximityMonitoring(); // ✅ BUG 8 FIX: Start backup interval for proximity checks
     
     // ✅ BUG 1 FIX: Removed duplicate startLocationTracking() call
     // initMap() already calls it internally - calling twice creates zombie watcher
@@ -2200,7 +2188,7 @@ function checkDangerZoneProximity() {
 
     for (const zone of allDangerZones) {
         const distance = calculateDistance(lat, lng, zone.latitude, zone.longitude);
-        const zoneRadius = zone.radius_meters || 200;
+        const zoneRadius = zone.radius_meters || zone.radius || 200; // ✅ BUG 7 FIX: Normalize field names
         
         // Check if within alert threshold or inside zone
         if (distance <= (zoneRadius + alertThreshold)) {
@@ -2382,12 +2370,14 @@ document.getElementById('continueAnyway')?.addEventListener('click', () => {
 
 document.getElementById('viewAlternativeRoute')?.addEventListener('click', () => {
     document.getElementById('dangerZoneAlertModal').style.display = 'none';
-    // Trigger route recalculation with danger zone avoidance
     if (routes && routes.length > 1) {
-        // Select the safest route
-        const safestRoute = routes.reduce((prev, current) => 
-            (prev.dangerZoneCount < current.dangerZoneCount) ? prev : current
-        );
+        // ✅ BUG 6 FIX: Use actual risk data instead of undefined dangerZoneCount
+        const severityScore = { safe: 0, low: 1, medium: 2, high: 3, critical: 4 };
+        const safestRoute = routes.reduce((prev, current) => {
+            const prevScore = severityScore[prev.risk?.riskLevel] ?? 99;
+            const currScore = severityScore[current.risk?.riskLevel] ?? 99;
+            return prevScore <= currScore ? prev : current;
+        });
         selectRoute(routes.indexOf(safestRoute));
         showNotification('Switched to safer route', 'success');
     } else {
