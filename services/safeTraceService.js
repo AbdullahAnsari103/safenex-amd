@@ -16,6 +16,10 @@ const OPENROUTE_API_KEY = process.env.OPENROUTE_API_KEY;
 const OPENROUTE_BASE_URL = 'https://api.openrouteservice.org/v2';
 const GEOCODE_BASE_URL = 'https://api.openrouteservice.org/geocode';
 
+// Fallback routing service - OSRM (Open Source Routing Machine)
+// Free, no API key required, better coverage in India
+const OSRM_BASE_URL = 'https://router.project-osrm.org';
+
 // Cache for geocoding results (1 hour TTL)
 const geocodeCache = new Map();
 const GEOCODE_CACHE_TTL = 60 * 60 * 1000;
@@ -183,37 +187,72 @@ async function geocodeAddress(address, returnMultiple = false) {
             console.log(`Nominatim returned ${response.data.length} results for "${address}"`);
             
             // Filter and score results for better accuracy
-            const scoredResults = response.data.map(result => {
-                let score = parseFloat(result.importance || 0);
-                
-                // Boost score if address contains key search terms
-                const searchTerms = address.toLowerCase().split(/[\s,]+/);
-                const resultAddress = result.display_name.toLowerCase();
-                
-                searchTerms.forEach(term => {
-                    if (term.length > 2 && resultAddress.includes(term)) {
-                        score += 0.2;
+            const scoredResults = response.data
+                .filter(result => {
+                    // REJECT vague results completely
+                    const type = result.type ? result.type.toLowerCase() : '';
+                    
+                    // Reject if it's just a city, state, country, or administrative region
+                    if (type === 'city' || type === 'state' || type === 'country' || 
+                        type === 'administrative' || type === 'region') {
+                        console.log(`Rejecting vague result: ${result.display_name} (type: ${type})`);
+                        return false;
                     }
+                    
+                    // Reject if address has less than 3 parts (too vague)
+                    const addressParts = result.display_name.split(',');
+                    if (addressParts.length < 3) {
+                        console.log(`Rejecting short address: ${result.display_name}`);
+                        return false;
+                    }
+                    
+                    return true;
+                })
+                .map(result => {
+                    let score = parseFloat(result.importance || 0);
+                    
+                    // Boost score if address contains key search terms
+                    const searchTerms = address.toLowerCase().split(/[\s,]+/);
+                    const resultAddress = result.display_name.toLowerCase();
+                    
+                    let termMatches = 0;
+                    searchTerms.forEach(term => {
+                        if (term.length > 2 && resultAddress.includes(term)) {
+                            score += 0.3;
+                            termMatches++;
+                        }
+                    });
+                    
+                    // Heavily boost if most search terms match
+                    if (termMatches >= searchTerms.length * 0.7) {
+                        score += 0.5;
+                    }
+                    
+                    // Boost if it's a specific place (not just a region)
+                    if (result.type === 'road' || result.type === 'building' || 
+                        result.type === 'amenity' || result.type === 'neighbourhood' ||
+                        result.type === 'suburb' || result.type === 'quarter') {
+                        score += 0.5;
+                    }
+                    
+                    // Extra boost for roads and buildings (most specific)
+                    if (result.type === 'road' || result.type === 'building') {
+                        score += 0.3;
+                    }
+                    
+                    return {
+                        ...result,
+                        score: score
+                    };
                 });
-                
-                // Boost if it's a specific place (not just a region)
-                if (result.type === 'road' || result.type === 'building' || result.type === 'amenity') {
-                    score += 0.3;
-                }
-                
-                // Penalize if it's just a suburb/city without specific location
-                if (result.type === 'suburb' || result.type === 'city' || result.type === 'state') {
-                    score -= 0.2;
-                }
-                
-                return {
-                    ...result,
-                    score: score
-                };
-            });
             
             // Sort by score (highest first)
             scoredResults.sort((a, b) => b.score - a.score);
+            
+            // If no results after filtering, throw error
+            if (scoredResults.length === 0) {
+                throw new Error('No specific location found. Please include road name, landmark, or area in your search.');
+            }
             
             if (returnMultiple) {
                 return scoredResults.slice(0, 5).map(result => ({
@@ -307,6 +346,70 @@ async function reverseGeocode(latitude, longitude) {
     } catch (error) {
         console.error('Reverse geocoding error:', error.message);
         return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+    }
+}
+
+/**
+ * Fetch routes from OSRM (fallback service with better India coverage)
+ * @param {string} profile - Travel mode: 'foot', 'bike', 'car'
+ */
+async function fetchRoutesFromOSRM(startLat, startLng, endLat, endLng, profile = 'foot', alternatives = 3) {
+    console.log(`Fetching routes from OSRM for ${profile}...`);
+    
+    // OSRM profile mapping
+    const osrmProfile = profile === 'foot-walking' ? 'foot' : 
+                       profile === 'cycling-regular' ? 'bike' : 
+                       profile === 'driving-car' ? 'car' : 'foot';
+    
+    const endpoint = `${OSRM_BASE_URL}/route/v1/${osrmProfile}/${startLng},${startLat};${endLng},${endLat}`;
+    
+    try {
+        const response = await axios.get(endpoint, {
+            params: {
+                overview: 'full',
+                geometries: 'geojson',
+                steps: true,
+                alternatives: Math.min(alternatives, 3) // OSRM supports up to 3 alternatives
+            },
+            timeout: 30000
+        });
+
+        if (!response.data.routes || response.data.routes.length === 0) {
+            throw new Error('No routes found from OSRM');
+        }
+
+        console.log(`OSRM returned ${response.data.routes.length} routes`);
+
+        const routes = response.data.routes.map((route, index) => {
+            // OSRM returns GeoJSON format with coordinates as [lng, lat]
+            const coordinates = route.geometry.coordinates;
+
+            // Extract turn-by-turn instructions from steps
+            const instructions = [];
+            if (route.legs && route.legs[0] && route.legs[0].steps) {
+                for (const step of route.legs[0].steps) {
+                    instructions.push({
+                        instruction: step.maneuver?.instruction || `Continue for ${(step.distance / 1000).toFixed(2)} km`,
+                        distance: step.distance,
+                        duration: step.duration,
+                        type: step.maneuver?.type || 'continue'
+                    });
+                }
+            }
+
+            return {
+                id: `route_${index}`,
+                coordinates: coordinates,
+                distance: route.distance, // meters
+                duration: route.duration, // seconds
+                instructions: instructions
+            };
+        });
+
+        return routes;
+    } catch (error) {
+        console.error('OSRM routing error:', error.message);
+        throw new Error(`OSRM routing failed: ${error.message}`);
     }
 }
 
@@ -728,17 +831,47 @@ async function fetchRoutes(startLat, startLng, endLat, endLng, profile = 'foot-w
     } catch (error) {
         console.error('OpenRouteService error:', error.response?.data || error.message);
         
-        // Handle OpenRouteService errors with helpful messages
+        // Check if this is a "no route found" error - try OSRM fallback
+        const isNoRouteError = error.response?.status === 404 || 
+                              error.message?.includes('No route found') ||
+                              error.message?.includes('Route could not be found');
+        
+        if (isNoRouteError) {
+            console.log('OpenRouteService failed to find route, trying OSRM fallback...');
+            
+            try {
+                // Try OSRM as fallback (better coverage in India)
+                const osrmRoutes = await fetchRoutesFromOSRM(startLat, startLng, endLat, endLng, profile, alternatives);
+                
+                console.log(`OSRM fallback successful! Found ${osrmRoutes.length} routes`);
+                
+                // Cache OSRM results
+                const avoidKey = avoidAreas.length > 0 ? `-avoid${avoidAreas.length}` : '';
+                const cacheKey = `${startLat.toFixed(5)},${startLng.toFixed(5)}-${endLat.toFixed(5)},${endLng.toFixed(5)}-${profile}${avoidKey}`;
+                
+                routeCache.set(cacheKey, {
+                    data: osrmRoutes,
+                    timestamp: Date.now(),
+                    metadata: {
+                        start: [startLat, startLng],
+                        end: [endLat, endLng],
+                        profile: profile,
+                        source: 'OSRM'
+                    }
+                });
+                
+                return osrmRoutes;
+            } catch (osrmError) {
+                console.error('OSRM fallback also failed:', osrmError.message);
+                throw new Error('No route found between these locations. The area may not have road data, or the points are not accessible by the selected travel mode. Try different locations or travel mode.');
+            }
+        }
+        
+        // Handle other OpenRouteService errors with helpful messages
         if (error.response?.status === 401) {
             throw new Error('Invalid API key configuration');
         } else if (error.response?.status === 429) {
             throw new Error('API rate limit exceeded. Please try again in a few minutes.');
-        } else if (error.response?.status === 404) {
-            const errorMsg = error.response?.data?.error?.message || '';
-            if (errorMsg.includes('Route could not be found')) {
-                throw new Error('No route found. OpenRouteService has limited road data for this area. Try: (1) Different nearby locations, (2) Different travel mode, or (3) Shorter distances.');
-            }
-            throw new Error('Route not found. Please try different locations.');
         } else if (error.response?.status === 400) {
             const errorMsg = error.response?.data?.error?.message || '';
             if (errorMsg.includes('distance must not be greater than')) {

@@ -713,18 +713,78 @@ async function findRoutes() {
             return;
         }
 
-        // Geocode destination
+        // Geocode destination - get multiple results for better accuracy
         const geocodeResponse = await apiCall('/geocode', {
             method: 'POST',
-            body: JSON.stringify({ address: destValue, returnMultiple: false })
+            body: JSON.stringify({ address: destValue, returnMultiple: true })
         });
 
-        const destination = geocodeResponse.data;
-        console.log('Destination geocoded:', destValue, '->', destination.latitude, destination.longitude);
-        console.log('Full destination object:', destination);
+        let destination;
+        const results = Array.isArray(geocodeResponse.data) ? geocodeResponse.data : [geocodeResponse.data];
+        
+        console.log('Geocoding results:', results);
 
-        // Show confirmation with the actual address found
-        const confirmMessage = `Found location:\n\n${destination.address}\n\nIs this the correct destination?`;
+        // If we got multiple results, let user choose
+        if (results.length > 1) {
+            // Filter out vague results (just city/state)
+            const specificResults = results.filter(r => {
+                const addr = r.address.toLowerCase();
+                const type = r.type ? r.type.toLowerCase() : '';
+                
+                // Reject if it's just a city, state, or country
+                if (type === 'city' || type === 'state' || type === 'country' || type === 'administrative') {
+                    return false;
+                }
+                
+                // Reject if address is too short (likely just city name)
+                if (addr.split(',').length < 3) {
+                    return false;
+                }
+                
+                return true;
+            });
+
+            if (specificResults.length === 0) {
+                showNotification('Location too vague. Please enter a more specific address (e.g., include road name, landmark, or area)', 'error');
+                showLoading(false);
+                return;
+            }
+
+            // Show options to user
+            let optionsText = 'Multiple locations found. Please choose:\n\n';
+            specificResults.forEach((result, index) => {
+                optionsText += `${index + 1}. ${result.address}\n\n`;
+            });
+            optionsText += '\nEnter number (1-' + specificResults.length + '):';
+
+            const choice = prompt(optionsText);
+            const choiceNum = parseInt(choice);
+
+            if (!choiceNum || choiceNum < 1 || choiceNum > specificResults.length) {
+                showNotification('Invalid selection. Please try again.', 'error');
+                showLoading(false);
+                return;
+            }
+
+            destination = specificResults[choiceNum - 1];
+        } else {
+            destination = results[0];
+            
+            // Check if result is too vague
+            const type = destination.type ? destination.type.toLowerCase() : '';
+            const addrParts = destination.address.split(',');
+            
+            if (type === 'city' || type === 'state' || type === 'country' || type === 'administrative' || addrParts.length < 3) {
+                showNotification('Location too vague. Please enter a more specific address with road name, landmark, or area.', 'error');
+                showLoading(false);
+                return;
+            }
+        }
+
+        console.log('Selected destination:', destination);
+
+        // Show final confirmation with the exact address
+        const confirmMessage = `Route to:\n\n${destination.address}\n\nIs this correct?`;
         
         if (!confirm(confirmMessage)) {
             showNotification('Please enter a more specific address', 'info');
