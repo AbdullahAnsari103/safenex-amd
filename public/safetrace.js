@@ -489,6 +489,7 @@ function useMyLocation() {
 function updateUserLocation(position) {
     const { latitude, longitude, heading, accuracy } = position.coords;
     currentPosition = { latitude, longitude };
+    updateProximityLocation(latitude, longitude); // ✅ BUG 2 FIX: Feed GPS into proximity detection
     
     console.log('[Location Update]', {
         lat: latitude.toFixed(6),
@@ -530,7 +531,7 @@ function updateUserLocation(position) {
 
     // Check for deviation if navigating
     if (isNavigating && selectedRoute) {
-        checkDeviation();
+        throttledCheckDeviation(); // ✅ BUG 4 FIX: Throttled — not every GPS tick
     }
 }
 
@@ -637,6 +638,43 @@ function updateRemainingRoute(remainingCoordinates) {
     });
 
     L.marker([lastCoord[1], lastCoord[0]], { icon: destIcon }).addTo(routeLayer);
+}
+
+// ✅ BUG 5 FIX: Async location picker modal — replaces prompt() which is broken in PWA/WebView
+function showLocationPickerModal(options) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;`;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `background: #0a0e1a; border: 1px solid rgba(139,92,246,0.4); border-radius: 12px; padding: 24px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto;`;
+        
+        modal.innerHTML = `
+            <h3 style="color: #fff; margin: 0 0 8px; font-size: 16px;">Multiple locations found</h3>
+            <p style="color: #94A3B8; font-size: 13px; margin: 0 0 16px;">Select the correct destination:</p>
+            ${options.map((opt, i) => `
+                <button data-index="${i}" style="display: block; width: 100%; text-align: left; padding: 12px 14px; margin: 0 0 8px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25); border-radius: 8px; color: #fff; cursor: pointer; font-size: 13px; line-height: 1.4;">
+                    ${opt.address}
+                </button>
+            `).join('')}
+            <button id="cancelLocationPick" style="margin-top: 8px; color: #64748B; background: none; border: none; cursor: pointer; font-size: 13px; width: 100%; padding: 8px;">Cancel</button>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        modal.querySelectorAll('button[data-index]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                overlay.remove();
+                resolve(options[parseInt(btn.dataset.index)]);
+            });
+        });
+        
+        document.getElementById('cancelLocationPick').addEventListener('click', () => {
+            overlay.remove();
+            resolve(null);
+        });
+    });
 }
 
 // Find Routes
@@ -750,23 +788,12 @@ async function findRoutes() {
                 return;
             }
 
-            // Show options to user
-            let optionsText = 'Multiple locations found. Please choose:\n\n';
-            specificResults.forEach((result, index) => {
-                optionsText += `${index + 1}. ${result.address}\n\n`;
-            });
-            optionsText += '\nEnter number (1-' + specificResults.length + '):';
-
-            const choice = prompt(optionsText);
-            const choiceNum = parseInt(choice);
-
-            if (!choiceNum || choiceNum < 1 || choiceNum > specificResults.length) {
-                showNotification('Invalid selection. Please try again.', 'error');
+            // ✅ BUG 5 FIX: Show options via modal instead of prompt()
+            destination = await showLocationPickerModal(specificResults);
+            if (!destination) {
                 showLoading(false);
                 return;
             }
-
-            destination = specificResults[choiceNum - 1];
         } else {
             destination = results[0];
             
@@ -783,14 +810,8 @@ async function findRoutes() {
 
         console.log('Selected destination:', destination);
 
-        // Show final confirmation with the exact address
-        const confirmMessage = `Route to:\n\n${destination.address}\n\nIs this correct?`;
-        
-        if (!confirm(confirmMessage)) {
-            showNotification('Please enter a more specific address', 'info');
-            showLoading(false);
-            return;
-        }
+        // ✅ BUG 5 FIX: Removed confirm() - breaks in PWA/WebView
+        // User already confirmed by selecting from modal
 
         // Calculate distance
         const distance = calculateDistanceKm(
@@ -937,6 +958,7 @@ async function findRoutes() {
         validRoutes = validRoutes.filter(route => 
             route && route.coordinates && Array.isArray(route.coordinates) && route.coordinates.length > 0
         );
+        routes = validRoutes; // ✅ BUG 3 FIX: Re-sync global after second filter pass
 
         if (validRoutes.length === 0) {
             throw new Error('No valid routes with coordinates found');
@@ -993,6 +1015,9 @@ function throttle(func, delay) {
         }
     };
 }
+
+// ✅ BUG 4 FIX: Throttled deviation check — max once every 10 seconds
+const throttledCheckDeviation = throttle(checkDeviation, 10000);
 
 // Debounce function for input optimization
 function debounce(func, delay) {
@@ -1913,9 +1938,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllDangerZones(); // Load verified danger zones on map
     setupLocationAutocomplete();
     
-    // Start location tracking automatically
-    console.log('Starting automatic location tracking...');
-    startLocationTracking(); // ✅ Use existing function instead of non-existent requestUserLocation
+    // ✅ BUG 1 FIX: Removed duplicate startLocationTracking() call
+    // initMap() already calls it internally - calling twice creates zombie watcher
     
     // Mobile-specific enhancements
     if (window.innerWidth <= 768) {
