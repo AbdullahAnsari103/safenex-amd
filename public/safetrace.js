@@ -824,6 +824,13 @@ async function findRoutes() {
         console.log('Travel mode:', travelMode);
         console.log('============================');
 
+        // Store intended destination for validation
+        const intendedDestination = {
+            latitude: destination.latitude,
+            longitude: destination.longitude,
+            address: destination.address
+        };
+
         // Get routes
         const routesResponse = await apiCall('/routes', {
             method: 'POST',
@@ -848,6 +855,75 @@ async function findRoutes() {
         if (!routesResponse.data.routes || !Array.isArray(routesResponse.data.routes)) {
             throw new Error('No routes found in response');
         }
+
+        // CRITICAL VALIDATION: Verify routes actually go to intended destination
+        const routes = routesResponse.data.routes;
+        let validRoutes = [];
+        
+        for (const route of routes) {
+            if (!route.coordinates || route.coordinates.length === 0) {
+                console.warn('Route has no coordinates, skipping');
+                continue;
+            }
+            
+            // Get the actual end point of the route
+            const routeEnd = route.coordinates[route.coordinates.length - 1];
+            const routeEndLat = routeEnd[1]; // [lng, lat] format
+            const routeEndLng = routeEnd[0];
+            
+            // Calculate distance between route end and intended destination
+            const endPointDistance = calculateDistanceKm(
+                routeEndLat,
+                routeEndLng,
+                intendedDestination.latitude,
+                intendedDestination.longitude
+            );
+            
+            console.log(`Route ${route.id} ends at:`, {
+                lat: routeEndLat,
+                lng: routeEndLng,
+                distanceFromIntended: endPointDistance.toFixed(3) + ' km'
+            });
+            
+            // Route must end within 500 meters of intended destination
+            if (endPointDistance > 0.5) {
+                console.error(`CRITICAL: Route ${route.id} ends ${endPointDistance.toFixed(2)}km away from intended destination!`);
+                console.error('Intended:', intendedDestination);
+                console.error('Route ends at:', { lat: routeEndLat, lng: routeEndLng });
+                continue; // Skip this invalid route
+            }
+            
+            validRoutes.push(route);
+        }
+        
+        // If NO routes go to the correct destination, STOP
+        if (validRoutes.length === 0) {
+            console.error('CRITICAL ERROR: No routes found that go to the intended destination!');
+            console.error('Intended destination:', intendedDestination);
+            console.error('All routes were rejected for not reaching the destination');
+            
+            showNotification(
+                'ERROR: Routes found do not go to your intended destination. This may be due to:\n\n' +
+                '1. Location name is ambiguous\n2. Routing service error\n3. No roads connect to exact location\n\n' +
+                'Please try:\n• More specific address\n• Nearby landmark\n• Different location',
+                'error'
+            );
+            showLoading(false);
+            return;
+        }
+        
+        // Warn user if some routes were rejected
+        if (validRoutes.length < routes.length) {
+            const rejectedCount = routes.length - validRoutes.length;
+            console.warn(`${rejectedCount} route(s) rejected for not reaching intended destination`);
+            showNotification(
+                `${rejectedCount} route(s) filtered out for not reaching your exact destination. Showing ${validRoutes.length} valid route(s).`,
+                'warning'
+            );
+        }
+        
+        // Use only valid routes
+        routesResponse.data.routes = validRoutes;
 
         routes = routesResponse.data.routes;
         const dangerZones = routesResponse.data.dangerZones || [];

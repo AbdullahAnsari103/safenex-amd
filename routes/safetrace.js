@@ -200,6 +200,51 @@ router.post('/routes', protect, async (req, res, next) => {
             distances: result.routes.map(r => r.distanceKm),
             durations: result.routes.map(r => r.durationMin)
         });
+        
+        // CRITICAL VALIDATION: Verify routes actually end at intended destination
+        const validatedRoutes = [];
+        for (const route of result.routes) {
+            if (!route.coordinates || route.coordinates.length === 0) {
+                console.warn('Route has no coordinates, skipping');
+                continue;
+            }
+            
+            // Get route end point
+            const routeEnd = route.coordinates[route.coordinates.length - 1];
+            const routeEndLat = routeEnd[1]; // [lng, lat] format
+            const routeEndLng = routeEnd[0];
+            
+            // Calculate distance from intended destination
+            const { calculateDistance } = require('../services/safeTraceService');
+            const endDistance = calculateDistance(routeEndLat, routeEndLng, endLat, endLng);
+            const endDistanceKm = endDistance / 1000;
+            
+            console.log(`Route ${route.id} validation:`, {
+                routeEnds: { lat: routeEndLat, lng: routeEndLng },
+                intendedEnd: { lat: endLat, lng: endLng },
+                distanceFromIntended: endDistanceKm.toFixed(3) + ' km'
+            });
+            
+            // Route must end within 500 meters of intended destination
+            if (endDistanceKm > 0.5) {
+                console.error(`REJECTED: Route ${route.id} ends ${endDistanceKm.toFixed(2)}km from intended destination`);
+                continue;
+            }
+            
+            validatedRoutes.push(route);
+        }
+        
+        if (validatedRoutes.length === 0) {
+            console.error('CRITICAL: All routes rejected - none reach intended destination');
+            return res.status(400).json({
+                success: false,
+                message: 'No valid routes found that reach your intended destination. Please try a more specific address or nearby landmark.'
+            });
+        }
+        
+        // Update result with only validated routes
+        result.routes = validatedRoutes;
+        console.log(`Validated ${validatedRoutes.length} of ${result.routes.length} routes`);
         console.log('===============================');
 
         // Generate AI analysis for the recommended route (optional - graceful degradation)
