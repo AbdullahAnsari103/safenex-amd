@@ -23,13 +23,14 @@ let selectedRoute = null;
 let routeLayer = null;
 let dangerZoneLayer = null;
 let isNavigating = false;
-let updateTimer = null;
-let autocompleteTimeout = null;
+// ✅ BUG 15 FIX: Removed unused updateTimer (never assigned anywhere)
+// ✅ BUG 14 FIX: Removed unused autocompleteTimeout (local variable used instead)
 let usingGPS = false;
 let manualStartLocation = null;
 let mapTheme = 'bright'; // Default theme
 let tileLayer = null; // Store tile layer reference
 let travelMode = 'foot-walking'; // Default travel mode
+let sharedAudioContext = null; // ✅ BUG 11 FIX: Reuse single AudioContext across all alerts
 
 // Performance optimization: Cache for geocoding results
 const geocodeCache = new Map();
@@ -1163,8 +1164,7 @@ function displayDangerZones(zones) {
         console.log(`Displaying ${MAX_ZONES_DISPLAY} of ${zones.length} danger zones for performance`);
     }
 
-    // Batch DOM operations for better performance
-    const fragment = document.createDocumentFragment();
+    // ✅ BUG 13 FIX: Removed unused fragment variable
 
     zonesToDisplay.forEach(zone => {
         // Determine color based on severity - DARKER COLORS
@@ -2025,7 +2025,7 @@ function setupSwipeableRoutes() {
         const x = e.touches[0].pageX - routesList.offsetLeft;
         const walk = (x - startX) * 2;
         routesList.scrollLeft = scrollLeft - walk;
-    });
+    }, { passive: false }); // ✅ BUG 18 FIX: Must be non-passive to allow preventDefault
     
     routesList.addEventListener('touchend', () => {
         isScrolling = false;
@@ -2130,27 +2130,14 @@ function setupGestureControls() {
     }, { passive: true }); // Mark as passive
 }
 
-// Debounce helper
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+// ✅ BUG 12 FIX: Removed duplicate debounce definition (first one is correct)
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
     if (watchId) {
         navigator.geolocation.clearWatch(watchId);
     }
-    if (updateTimer) {
-        clearInterval(updateTimer);
-    }
+    // ✅ BUG 15 FIX: Removed updateTimer cleanup (variable never assigned)
 });
 
 
@@ -2184,25 +2171,29 @@ function checkDangerZoneProximity() {
     if (!userCurrentLocation || allDangerZones.length === 0) return;
 
     const { lat, lng } = userCurrentLocation;
-    const alertThreshold = 500; // Alert when within 500 meters
+    const alertThreshold = 500;
 
-    for (const zone of allDangerZones) {
+    // ✅ BUG 16 & 17 FIX: Sort by severity so critical zones always alert first
+    const severityOrder = { critical: 5, high: 4, medium: 3, low: 2, safe: 1 };
+    const sortedZones = [...allDangerZones].sort((a, b) =>
+        (severityOrder[b.risk_level || b.severity] || 0) - (severityOrder[a.risk_level || a.severity] || 0)
+    );
+
+    for (const zone of sortedZones) {
         const distance = calculateDistance(lat, lng, zone.latitude, zone.longitude);
-        const zoneRadius = zone.radius_meters || zone.radius || 200; // ✅ BUG 7 FIX: Normalize field names
+        const zoneRadius = zone.radius_meters || zone.radius || 200;
         
-        // Check if within alert threshold or inside zone
+        // ✅ BUG 17 FIX: Use compound key so undefined id doesn't collapse all zones
+        const zoneKey = zone.id ?? `${zone.latitude}-${zone.longitude}-${zone.category}`;
+        
         if (distance <= (zoneRadius + alertThreshold)) {
-            // Only alert once per zone per session
-            if (!alertedZones.has(zone.id)) {
-                alertedZones.add(zone.id);
+            if (!alertedZones.has(zoneKey)) {
+                alertedZones.add(zoneKey);
                 showDangerZoneAlert(zone, distance);
-                break; // Show one alert at a time
+                break; // ✅ Safe to break — highest severity is now first
             }
-        } else {
-            // If user moves away, allow re-alerting if they come back
-            if (distance > (zoneRadius + alertThreshold + 200)) {
-                alertedZones.delete(zone.id);
-            }
+        } else if (distance > (zoneRadius + alertThreshold + 200)) {
+            alertedZones.delete(zoneKey); // Allow re-alert if user returns
         }
     }
 }
@@ -2310,7 +2301,14 @@ function showDangerZoneAlert(zone, distance) {
 // Play loud alert sound for danger zones
 function playAlertSound() {
     try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // ✅ BUG 11 FIX: Reuse shared AudioContext
+        if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+            sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (sharedAudioContext.state === 'suspended') {
+            sharedAudioContext.resume();
+        }
+        const audioContext = sharedAudioContext;
         
         // Create a more urgent, louder alert sound
         // Play three beeps in succession
