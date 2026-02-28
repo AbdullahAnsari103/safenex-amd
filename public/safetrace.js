@@ -69,7 +69,7 @@ async function apiCall(endpoint, options = {}) {
     }
 
     // Request deduplication: prevent duplicate simultaneous requests
-    const requestKey = `${endpoint}-${JSON.stringify(options.body || '')}`;
+    const requestKey = `${endpoint}-${options.body || ''}`; // ✅ BUG 8 FIX: body is already JSON string
     if (pendingRequests.has(requestKey)) {
         console.log('Reusing pending request for:', endpoint);
         return pendingRequests.get(requestKey);
@@ -240,62 +240,46 @@ function startLocationTracking() {
 
     updateLocationStatus('Getting your location...', 'info');
 
-    // Strategy: Try fast location first, then high accuracy if needed
+    // ✅ BUG 2 FIX: Shared flag across all location attempts (not just fast path)
     let locationAcquired = false;
 
-    // Step 1: Quick location with cached position (fast but less accurate)
+    const onSuccess = (position) => {
+        if (locationAcquired) return; // ✅ Guard covers ALL paths
+        locationAcquired = true;
+        updateUserLocation(position);
+        updateLocationStatus('GPS location active', 'success');
+        console.log('Location acquired:', position.coords.accuracy, 'meters accuracy');
+        startHighAccuracyWatch();
+    };
+
+    const onError = (error) => {
+        if (locationAcquired) return;
+        console.warn('Location attempt failed:', error);
+        // Only show error if all attempts have failed
+        handleGeolocationError(error);
+    };
+
+    // Step 1: Try fast cached location
     navigator.geolocation.getCurrentPosition(
-        (position) => {
-            if (!locationAcquired) {
-                locationAcquired = true;
-                updateUserLocation(position);
-                updateLocationStatus('GPS location active', 'success');
-                console.log('Quick location acquired:', position.coords.accuracy, 'meters accuracy');
-                
-                // Start watching for better accuracy in background
-                startHighAccuracyWatch();
-            }
-        },
+        onSuccess,
         (error) => {
+            if (locationAcquired) return;
             console.warn('Quick location failed, trying high accuracy...', error);
-            // Step 2: If quick fails, try high accuracy
-            tryHighAccuracyLocation();
+            // Step 2: Try high accuracy
+            navigator.geolocation.getCurrentPosition(
+                onSuccess,
+                onError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 5000
+                }
+            );
         },
         {
-            enableHighAccuracy: false, // Fast but less accurate
-            timeout: 5000, // Only wait 5 seconds for quick location
-            maximumAge: 30000 // Accept cached location up to 30 seconds old
-        }
-    );
-
-    // Fallback timeout: If no location after 8 seconds, try high accuracy
-    setTimeout(() => {
-        if (!locationAcquired) {
-            console.log('Quick location timeout, trying high accuracy...');
-            tryHighAccuracyLocation();
-        }
-    }, 8000);
-}
-
-// Try High Accuracy Location (slower but more precise)
-function tryHighAccuracyLocation() {
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            updateUserLocation(position);
-            updateLocationStatus('GPS location active (high accuracy)', 'success');
-            console.log('High accuracy location acquired:', position.coords.accuracy, 'meters accuracy');
-            
-            // Start watching for continuous updates
-            startHighAccuracyWatch();
-        },
-        (error) => {
-            console.error('High accuracy location error:', error);
-            handleGeolocationError(error);
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 15000, // 15 seconds for high accuracy
-            maximumAge: 5000 // Accept recent cached location
+            enableHighAccuracy: false,
+            timeout: 5000,
+            maximumAge: 30000
         }
     );
 }
@@ -320,13 +304,13 @@ function startHighAccuracyWatch() {
         },
         (error) => {
             console.warn('[GPS] Watch error:', error.message);
-            // Don't show error for watch position, just log it
-            // Try to restart watch after error
+            // ✅ BUG 3 FIX: watchPosition error does NOT auto-clear the watch
+            // Must clear it before restart or watchId check will always be truthy
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
             setTimeout(() => {
-                if (!watchId) {
-                    console.log('[GPS] Restarting watch after error...');
-                    startHighAccuracyWatch();
-                }
+                console.log('[GPS] Restarting watch after error...');
+                startHighAccuracyWatch();
             }, 5000);
         },
         {
@@ -474,6 +458,9 @@ function useMyLocation() {
 }
 
 // Update User Location
+let activeRouteLine = null;
+let lastTrimIndex = 0;
+let travelledLine = null;
 function updateUserLocation(position) {
     const { latitude, longitude, heading, accuracy } = position.coords;
     currentPosition = { latitude, longitude };
@@ -508,13 +495,30 @@ function updateUserLocation(position) {
     } else {
         updateDirectionalMarker(latitude, longitude, currentHeading, accuracy);
         
-        // If navigating, keep user centered on map
+        // ✅ BUG 3 FIX: Offset user to lower third during navigation (Google Maps style)
+        // panTo does NOT support offset — must use project/unproject to shift target point
         if (isNavigating) {
-            map.panTo([latitude, longitude], {
+            const mapHeight = map.getSize().y;
+            const offsetPixels = mapHeight * 0.25; // Push center up 25% so user is in lower third
+            const currentZoom = map.getZoom();
+            const targetPoint = map.project([latitude, longitude], currentZoom).subtract([0, offsetPixels]);
+            const offsetLatLng = map.unproject(targetPoint, currentZoom);
+            map.panTo(offsetLatLng, {
                 animate: true,
-                duration: 0.5
+                duration: 0.5,
+                easeLinearity: 0.5
             });
         }
+    }
+
+    // ✅ BUG 10 FIX: Only check arrival when GPS is accurate enough to be reliable
+    if (isNavigating && selectedRoute && accuracy <= 30) {
+        checkArrival(latitude, longitude);
+    }
+
+    // ✅ BUG B FIX: Client-side route trimming
+    if (isNavigating && selectedRoute && accuracy <= 50) {
+        trimRouteFromBehind(latitude, longitude);
     }
 
     // Check for deviation if navigating
@@ -526,13 +530,25 @@ function updateUserLocation(position) {
 // Create Directional Marker with Arrow
 function createDirectionalMarker(lat, lng, heading, accuracy) {
     const rotation = heading !== null && heading !== undefined ? heading : 0;
+    previousPosition = { lat, lng }; // ✅ BUG 6 FIX: Seed previousPosition for bearing calc
     
-    // Create custom icon with arrow pointing in direction of movement
+    // ✅ BUG 6 FIX: Use consistent icon design with circle background
     const icon = L.divIcon({
         className: 'user-location-arrow',
         html: `
-            <svg viewBox="0 0 24 24" fill="none" style="transform: rotate(${rotation}deg); transition: transform 0.3s ease;">
-                <path d="M12 2L4 20l8-4 8 4-8-18z" fill="#3B82F6" stroke="white" stroke-width="2"/>
+            <svg viewBox="0 0 24 24" fill="none" style="transform: rotate(${rotation}deg);
+                transition: transform 0.4s ease;
+                width: 40px; height: 40px;
+                filter: drop-shadow(0 2px 6px rgba(59,130,246,0.5));">
+                <circle cx="12" cy="12" r="10"
+                    fill="rgba(59,130,246,0.15)"
+                    stroke="#3B82F6"
+                    stroke-width="1.5"/>
+                <path d="M12 5L7 17l5-2.5 5 2.5L12 5z"
+                    fill="#3B82F6"
+                    stroke="white"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"/>
             </svg>
         `,
         iconSize: [40, 40],
@@ -540,38 +556,212 @@ function createDirectionalMarker(lat, lng, heading, accuracy) {
     });
 
     userMarker = L.marker([lat, lng], { icon }).addTo(map);
+}
+
+// Calculate bearing between two points (for movement-based heading)
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
     
-    // Do NOT add accuracy circle - removed as per requirement
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    const θ = Math.atan2(y, x);
+    
+    return (θ * 180 / Math.PI + 360) % 360; // Convert to degrees and normalize
 }
 
 // Update Directional Marker
+let previousPosition = null;
 function updateDirectionalMarker(lat, lng, heading, accuracy) {
-    const rotation = heading !== null && heading !== undefined ? heading : currentHeading || 0;
-    
-    // Update icon with new rotation - arrow head points in direction of movement
-    const icon = L.divIcon({
-        className: 'user-location-arrow',
-        html: `
-            <svg viewBox="0 0 24 24" fill="none" style="transform: rotate(${rotation}deg); transition: transform 0.3s ease;">
-                <path d="M12 2L4 20l8-4 8 4-8-18z" fill="#3B82F6" stroke="white" stroke-width="2"/>
-            </svg>
-        `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
-    });
-
-    userMarker.setIcon(icon);
-    userMarker.setLatLng([lat, lng]);
-    
-    // Store heading for future updates
-    if (heading !== null && heading !== undefined) {
+    // Calculate bearing from movement if we have previous position
+    let rotation = 0;
+    if (previousPosition && (lat !== previousPosition.lat || lng !== previousPosition.lng)) {
+        rotation = calculateBearing(previousPosition.lat, previousPosition.lng, lat, lng);
+        currentHeading = rotation; // Store calculated heading
+    } else if (heading !== null && heading !== undefined) {
+        rotation = heading; // Use device compass if available
         currentHeading = heading;
+    } else {
+        rotation = currentHeading || 0; // Use last known heading
+    }
+    
+    // Store current position for next calculation
+    previousPosition = { lat, lng };
+    
+    // ✅ BUG A FIX: Direct SVG DOM manipulation instead of setIcon()
+    const markerElement = userMarker.getElement();
+    if (markerElement) {
+        const svg = markerElement.querySelector('svg');
+        if (svg) {
+            svg.style.transform = `rotate(${rotation}deg)`;
+        }
+    }
+
+    userMarker.setLatLng([lat, lng]);
+}
+
+// ✅ BUG B FIX: Find closest point on route to user
+function findClosestRoutePointIndex(userLat, userLng, routeCoordinates) {
+    let minDistance = Infinity;
+    let closestIndex = 0;
+    
+    // 🔧 FIX: Use detected axis order from selectedRoute
+    const isGeoJSON = selectedRoute && selectedRoute._isGeoJSONOrder !== false;
+    
+    for (let i = 0; i < routeCoordinates.length; i++) {
+        const coord = routeCoordinates[i];
+        // 🔧 FIX: Extract lat/lng based on detected axis order
+        const coordLat = isGeoJSON ? coord[1] : coord[0];
+        const coordLng = isGeoJSON ? coord[0] : coord[1];
+        const distance = calculateDistance(userLat, userLng, coordLat, coordLng);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestIndex = i;
+        }
+    }
+    
+    return closestIndex;
+}
+
+// ✅ BUG B & E FIX: Trim route from behind user (client-side)
+function trimRouteFromBehind(userLat, userLng) {
+    if (!selectedRoute || !selectedRoute.coordinates) return;
+    
+    const closestIndex = findClosestRoutePointIndex(userLat, userLng, selectedRoute.coordinates);
+    
+    // ✅ BUG 1 FIX: Only redraw if user has advanced at least 5 waypoints — prevents flicker
+    // NOTE: Do NOT set lastTrimIndex before the redraw check
+    if (closestIndex <= lastTrimIndex + 5) return;
+    
+    const remainingCoords = selectedRoute.coordinates.slice(closestIndex);
+    const travelledCoords = selectedRoute.coordinates.slice(0, closestIndex + 1);
+    
+    if (remainingCoords.length < 2) return;
+    
+    // ✅ Set lastTrimIndex AFTER the guard check, not before
+    lastTrimIndex = closestIndex;
+    
+    // 🔧 FIX: Use detected axis order
+    const isGeoJSON = selectedRoute._isGeoJSONOrder !== false;
+    const toLatLng = (coord) => isGeoJSON ? [coord[1], coord[0]] : [coord[0], coord[1]];
+    
+    const remainingLatLngs = remainingCoords.map(toLatLng);
+    const travelledLatLngs = travelledCoords.map(toLatLng);
+    
+    if (activeRouteLine && travelledLine) {
+        // ✅ Update existing polylines — no clear/redraw needed, no flicker
+        activeRouteLine.setLatLngs(remainingLatLngs);
+        travelledLine.setLatLngs(travelledLatLngs);
+    } else {
+        // First draw — create polyline objects
+        routeLayer.clearLayers();
+        
+        // Grey dashed travelled path
+        if (travelledLatLngs.length > 1) {
+            travelledLine = L.polyline(travelledLatLngs, {
+                color: '#64748B',
+                weight: 4,
+                opacity: 0.5,
+                dashArray: '10, 10',
+                lineJoin: 'round',
+                lineCap: 'round'
+            }).addTo(routeLayer);
+        }
+        
+        // Purple remaining route
+        activeRouteLine = L.polyline(remainingLatLngs, {
+            color: '#8B5CF6',
+            weight: 6,
+            opacity: 0.9,
+            lineJoin: 'round',
+            lineCap: 'round'
+        }).addTo(routeLayer);
+        
+        // 🔧 FIX: Destination marker uses correct axis too
+        const lastCoord = selectedRoute.coordinates[selectedRoute.coordinates.length - 1];
+        const destLatLng = isGeoJSON ? [lastCoord[1], lastCoord[0]] : [lastCoord[0], lastCoord[1]];
+        const destIcon = L.divIcon({
+            className: 'destination-marker',
+            html: `<div style="width:30px;height:30px;background:#EF4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        L.marker(destLatLng, { icon: destIcon }).addTo(routeLayer);
+    }
+}
+
+// ✅ BUG H FIX: Check if user has arrived at destination
+function checkArrival(userLat, userLng) {
+    if (!selectedRoute || !selectedRoute.coordinates) return;
+    
+    const destination = selectedRoute.coordinates[selectedRoute.coordinates.length - 1];
+    
+    // 🔧 FIX: Use detected axis order for destination coordinates
+    const isGeoJSON = selectedRoute._isGeoJSONOrder !== false;
+    const destLat = isGeoJSON ? destination[1] : destination[0];
+    const destLng = isGeoJSON ? destination[0] : destination[1];
+    
+    const distanceToDestination = calculateDistance(userLat, userLng, destLat, destLng);
+    
+    // User has arrived if within 30 meters
+    if (distanceToDestination <= 30) {
+        isNavigating = false;
+        showNotification('🎉 You have arrived at your destination!', 'success');
+        
+        // Play arrival sound
+        playArrivalSound();
+        
+        // ✅ BUG 4 FIX: Keep GPS watch running — user may want to start new navigation
+        // Only stop NAVIGATION state, not location tracking itself
+        // watchId remains active for proximity alerts and future navigation
+        
+        // Reset route display
+        lastTrimIndex = 0;
+        activeRouteLine = null;
+        travelledLine = null;
+    }
+}
+
+// Play arrival sound
+function playArrivalSound() {
+    try {
+        if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+            sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (sharedAudioContext.state === 'suspended') {
+            sharedAudioContext.resume();
+        }
+        const audioContext = sharedAudioContext;
+        
+        // Play cheerful arrival melody
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+        notes.forEach((freq, i) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = freq;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime + i * 0.2);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.2 + 0.3);
+            
+            oscillator.start(audioContext.currentTime + i * 0.2);
+            oscillator.stop(audioContext.currentTime + i * 0.2 + 0.3);
+        });
+    } catch (error) {
+        console.warn('Audio not supported:', error);
     }
 }
 
 // Check Deviation from Route
+let isRerouting = false;
 async function checkDeviation() {
-    if (!currentPosition || !selectedRoute) return;
+    if (!currentPosition || !selectedRoute || isRerouting) return;
 
     try {
         const response = await apiCall('/check-deviation', {
@@ -585,11 +775,25 @@ async function checkDeviation() {
         });
 
         if (response.data.deviated) {
+            // ✅ BUG G FIX: Pause navigation during reroute
+            isRerouting = true;
+            const wasNavigating = isNavigating;
+            isNavigating = false;
+            
             showNotification('You have deviated from the route. Recalculating...', 'warning');
-            // Trigger reroute
-            const destInput = document.getElementById('destInput');
-            if (destInput.value) {
-                findRoutes();
+            
+            try {
+                // Trigger reroute
+                const destInput = document.getElementById('destInput');
+                if (destInput.value) {
+                    await findRoutes();
+                }
+            } catch (rerouteError) {
+                console.error('Reroute failed:', rerouteError);
+                showNotification('Failed to recalculate route. Continuing with original route.', 'error');
+                isNavigating = wasNavigating; // Restore navigation state
+            } finally {
+                isRerouting = false;
             }
         } else if (response.data.remainingRoute) {
             // Update route to show only remaining path
@@ -597,6 +801,7 @@ async function checkDeviation() {
         }
     } catch (error) {
         console.error('Deviation check error:', error);
+        isRerouting = false;
     }
 }
 
@@ -605,22 +810,28 @@ function updateRemainingRoute(remainingCoordinates) {
     if (!routeLayer) return;
 
     routeLayer.clearLayers();
+    
+    // ✅ BUG 1 FIX: Reset trim state — clearLayers removed the old polyline objects
+    activeRouteLine = null;
+    travelledLine = null;
+    lastTrimIndex = 0;
 
-    // Draw remaining route
     const latlngs = remainingCoordinates.map(coord => [coord[1], coord[0]]);
     
-    L.polyline(latlngs, {
+    // ✅ Store as activeRouteLine so trimRouteFromBehind can update it later
+    activeRouteLine = L.polyline(latlngs, {
         color: '#8B5CF6',
-        weight: 5,
-        opacity: 0.8,
-        lineJoin: 'round'
+        weight: 6,
+        opacity: 0.9,
+        lineJoin: 'round',
+        lineCap: 'round'
     }).addTo(routeLayer);
 
     // Add destination marker
     const lastCoord = remainingCoordinates[remainingCoordinates.length - 1];
     const destIcon = L.divIcon({
         className: 'destination-marker',
-        html: `<div style="width: 30px; height: 30px; background: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>`,
+        html: `<div style="width:30px;height:30px;background:#EF4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15]
     });
@@ -739,67 +950,82 @@ async function findRoutes() {
             return;
         }
 
-        // Geocode destination - get multiple results for better accuracy
-        const geocodeResponse = await apiCall('/geocode', {
-            method: 'POST',
-            body: JSON.stringify({ address: destValue, returnMultiple: true })
-        });
-
+        // STEP 2: Check if user picked from autocomplete — use exact coords
         let destination;
-        const results = Array.isArray(geocodeResponse.data) ? geocodeResponse.data : [geocodeResponse.data];
         
-        console.log('Geocoding results:', results);
-
-        // If we got multiple results, let user choose
-        if (results.length > 1) {
-            // Filter out vague results (just city/state)
-            const specificResults = results.filter(r => {
-                const addr = r.address.toLowerCase();
-                const type = r.type ? r.type.toLowerCase() : '';
-                
-                // Reject if it's just a city, state, or country
-                if (type === 'city' || type === 'state' || type === 'country' || type === 'administrative') {
-                    return false;
-                }
-                
-                // Reject if address is too short (likely just city name)
-                if (addr.split(',').length < 3) {
-                    return false;
-                }
-                
-                return true;
+        // Check if user already picked from autocomplete — use those exact coords
+        const storedLat = parseFloat(destInput.dataset.lat);
+        const storedLng = parseFloat(destInput.dataset.lng);
+        
+        if (!isNaN(storedLat) && !isNaN(storedLng)) {
+            // ✅ User picked from dropdown — skip geocoding entirely
+            // These coords came directly from the autocomplete API and are exact
+            console.log('[DEST] Using autocomplete coords — skipping geocoder:', storedLat, storedLng);
+            destination = {
+                latitude: storedLat,
+                longitude: storedLng,
+                address: destValue
+            };
+        } else {
+            // User typed manually without picking — must geocode
+            console.log('[DEST] No stored coords — geocoding manually typed address');
+            
+            const geocodeResponse = await apiCall('/geocode', {
+                method: 'POST',
+                body: JSON.stringify({ address: destValue, returnMultiple: true })
             });
 
-            if (specificResults.length === 0) {
-                showNotification('Location too vague. Please enter a more specific address (e.g., include road name, landmark, or area)', 'error');
-                showLoading(false);
-                return;
+            const results = Array.isArray(geocodeResponse.data) ? geocodeResponse.data : [geocodeResponse.data];
+            
+            console.log('Geocoding results:', results);
+
+            // If we got multiple results, let user choose
+            if (results.length > 1) {
+                // Filter out vague results (just city/state)
+                const specificResults = results.filter(r => {
+                    const addr = r.address.toLowerCase();
+                    const type = r.type ? r.type.toLowerCase() : '';
+                    
+                    // Reject if it's just a city, state, or country
+                    if (type === 'city' || type === 'state' || type === 'country' || type === 'administrative') {
+                        return false;
+                    }
+                    
+                    // Reject if address is too short (likely just city name)
+                    if (addr.split(',').length < 3) {
+                        return false;
+                    }
+                    
+                    return true;
+                });
+
+                if (specificResults.length === 0) {
+                    showNotification('Location too vague. Please enter a more specific address (e.g., include road name, landmark, or area)', 'error');
+                    showLoading(false);
+                    return;
+                }
+
+                destination = await showLocationPickerModal(specificResults);
+                if (!destination) {
+                    showLoading(false);
+                    return;
+                }
+            } else {
+                destination = results[0];
+                
+                // Check if result is too vague
+                const type = destination.type ? destination.type.toLowerCase() : '';
+                const addrParts = destination.address.split(',');
+                
+                if (type === 'city' || type === 'state' || type === 'country' || type === 'administrative' || addrParts.length < 3) {
+                    showNotification('Location too vague. Please enter a more specific address with road name, landmark, or area.', 'error');
+                    showLoading(false);
+                    return;
+                }
             }
 
-            // ✅ BUG 5 FIX: Show options via modal instead of prompt()
-            destination = await showLocationPickerModal(specificResults);
-            if (!destination) {
-                showLoading(false);
-                return;
-            }
-        } else {
-            destination = results[0];
-            
-            // Check if result is too vague
-            const type = destination.type ? destination.type.toLowerCase() : '';
-            const addrParts = destination.address.split(',');
-            
-            if (type === 'city' || type === 'state' || type === 'country' || type === 'administrative' || addrParts.length < 3) {
-                showNotification('Location too vague. Please enter a more specific address with road name, landmark, or area.', 'error');
-                showLoading(false);
-                return;
-            }
+            console.log('Selected destination:', destination);
         }
-
-        console.log('Selected destination:', destination);
-
-        // ✅ BUG 5 FIX: Removed confirm() - breaks in PWA/WebView
-        // User already confirmed by selecting from modal
 
         // Calculate distance
         const distance = calculateDistanceKm(
@@ -875,10 +1101,47 @@ async function findRoutes() {
                 continue;
             }
             
-            // Get the actual end point of the route
-            const routeEnd = route.coordinates[route.coordinates.length - 1];
-            const routeEndLat = routeEnd[1]; // [lng, lat] format
-            const routeEndLng = routeEnd[0];
+            // 🔧 FIX: Detect coordinate order from the route's START point, not the end point.
+            // We know startLat and startLng exactly. Check both [0] and [1] of the first coordinate
+            // to determine which axis order this backend uses. This self-calibrates automatically.
+            const firstCoord = route.coordinates[0];
+            const lastCoord = route.coordinates[route.coordinates.length - 1];
+
+            // 🔧 FIX: Test BOTH possible orderings against the known start point.
+            // GeoJSON standard: coord = [lng, lat] → lat=coord[1], lng=coord[0]
+            // Some backends: coord = [lat, lng] → lat=coord[0], lng=coord[1]
+            const distIfGeoJSON = calculateDistanceKm(
+                firstCoord[1], firstCoord[0],  // treating as [lng, lat]
+                startLat, startLng
+            );
+            const distIfSwapped = calculateDistanceKm(
+                firstCoord[0], firstCoord[1],  // treating as [lat, lng]
+                startLat, startLng
+            );
+
+            // 🔧 FIX: Whichever interpretation puts the route START near our known start point
+            // is the correct axis order. Use that same order for the END point check.
+            const isGeoJSONOrder = distIfGeoJSON <= distIfSwapped;
+
+            console.log(`Route ${route.id} axis detection:`, {
+                firstCoord,
+                distIfGeoJSON: distIfGeoJSON.toFixed(3) + ' km',
+                distIfSwapped: distIfSwapped.toFixed(3) + ' km',
+                isGeoJSONOrder,
+                detectedOrder: isGeoJSONOrder ? '[lng, lat]' : '[lat, lng]'
+            });
+
+            // 🔧 FIX: Now extract route end using the DETECTED correct axis order
+            let routeEndLat, routeEndLng;
+            if (isGeoJSONOrder) {
+                // Standard GeoJSON: [lng, lat]
+                routeEndLat = lastCoord[1];
+                routeEndLng = lastCoord[0];
+            } else {
+                // Swapped backend: [lat, lng]
+                routeEndLat = lastCoord[0];
+                routeEndLng = lastCoord[1];
+            }
             
             // Calculate distance between route end and intended destination
             const endPointDistance = calculateDistanceKm(
@@ -888,17 +1151,18 @@ async function findRoutes() {
                 intendedDestination.longitude
             );
             
-            console.log(`Route ${route.id} ends at:`, {
-                lat: routeEndLat,
-                lng: routeEndLng,
-                distanceFromIntended: endPointDistance.toFixed(3) + ' km'
+            console.log(`Route ${route.id} end validation:`, {
+                routeEnd: { lat: routeEndLat, lng: routeEndLng },
+                intendedDest: { lat: intendedDestination.latitude, lng: intendedDestination.longitude },
+                distanceKm: endPointDistance.toFixed(3)
             });
+
+            // 🔧 FIX: Attach detected axis order to route object so drawRoute() uses it correctly
+            route._isGeoJSONOrder = isGeoJSONOrder;
             
             // Route must end within 500 meters of intended destination
             if (endPointDistance > 0.5) {
-                console.error(`CRITICAL: Route ${route.id} ends ${endPointDistance.toFixed(2)}km away from intended destination!`);
-                console.error('Intended:', intendedDestination);
-                console.error('Route ends at:', { lat: routeEndLat, lng: routeEndLng });
+                console.error(`Route ${route.id} rejected — ends ${endPointDistance.toFixed(2)}km from destination`);
                 continue; // Skip this invalid route
             }
             
@@ -1067,6 +1331,11 @@ function displayRoutes(routesList) {
 // Select Route
 function selectRoute(index) {
     selectedRoute = routes[index];
+    
+    // ✅ BUG 2 FIX: Reset trim state so new route draws from scratch
+    lastTrimIndex = 0;
+    activeRouteLine = null;
+    travelledLine = null;
 
     // Update UI
     document.querySelectorAll('.route-card').forEach((card, i) => {
@@ -1075,6 +1344,17 @@ function selectRoute(index) {
 
     // Draw route on map
     drawRoute(selectedRoute);
+
+    // ✅ BUG 4 FIX: Zoom to USER position at street level, not route center
+    setTimeout(() => {
+        if (map && isNavigating && currentPosition) {
+            map.setView(
+                [currentPosition.latitude, currentPosition.longitude],
+                17,
+                { animate: true }
+            );
+        }
+    }, 1000);
 
     // Show intelligence panel
     showIntelligencePanel(selectedRoute);
@@ -1107,12 +1387,18 @@ function drawRoute(route) {
     routeLayer.clearLayers();
 
     try {
+        // 🔧 FIX: Use the axis order detected during route validation in findRoutes()
+        // If _isGeoJSONOrder is true → coords are [lng, lat] → Leaflet needs [coord[1], coord[0]]
+        // If _isGeoJSONOrder is false → coords are [lat, lng] → Leaflet needs [coord[0], coord[1]]
+        const isGeoJSON = route._isGeoJSONOrder !== false; // default to GeoJSON if not set
+
         const latlngs = route.coordinates.map(coord => {
             if (!Array.isArray(coord) || coord.length < 2) {
                 console.warn('Invalid coordinate:', coord);
                 return null;
             }
-            return [coord[1], coord[0]];
+            // 🔧 FIX: Apply correct axis extraction based on detected order
+            return isGeoJSON ? [coord[1], coord[0]] : [coord[0], coord[1]];
         }).filter(coord => coord !== null);
 
         if (latlngs.length === 0) {
@@ -1131,6 +1417,11 @@ function drawRoute(route) {
         // Add destination marker
         const lastCoord = route.coordinates[route.coordinates.length - 1];
         if (Array.isArray(lastCoord) && lastCoord.length >= 2) {
+            // 🔧 FIX: Same axis correction for destination marker
+            const destLatLng = isGeoJSON 
+                ? [lastCoord[1], lastCoord[0]] 
+                : [lastCoord[0], lastCoord[1]];
+
             const destIcon = L.divIcon({
                 className: 'destination-marker',
                 html: `<div style="width: 30px; height: 30px; background: #EF4444; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.4);"></div>`,
@@ -1138,7 +1429,7 @@ function drawRoute(route) {
                 iconAnchor: [15, 15]
             });
 
-            L.marker([lastCoord[1], lastCoord[0]], { icon: destIcon }).addTo(routeLayer);
+            L.marker(destLatLng, { icon: destIcon }).addTo(routeLayer);
         }
 
         // Fit map to route
@@ -1660,6 +1951,10 @@ function setupAutocompleteForInput(inputId) {
     let inputAutocompleteTimeout = null;
 
     input.addEventListener('input', async (e) => {
+        // STEP 1: Clear stored coords when user types manually (prevents stale coords)
+        input.dataset.lat = '';
+        input.dataset.lng = '';
+        
         const query = e.target.value.trim();
         
         // If this is start input and user is typing, disable GPS mode
@@ -1785,14 +2080,7 @@ document.querySelectorAll('.travel-mode-btn').forEach(btn => {
 // Set default active mode
 document.querySelector('.travel-mode-btn[data-mode="foot-walking"]').classList.add('active');
 
-document.getElementById('startInput').addEventListener('input', () => {
-    // When user types manually, disable GPS mode
-    const startInput = document.getElementById('startInput');
-    if (startInput.value && !startInput.value.match(/^-?\d+\.\d+,\s*-?\d+\.\d+$/)) {
-        usingGPS = false;
-        updateLocationStatus('Manual input mode', 'info');
-    }
-});
+// ✅ BUG 5 FIX: Removed duplicate startInput listener — setupAutocompleteForInput already handles this
 
 document.getElementById('startInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
@@ -1886,6 +2174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Clear old cache entries on page load
     clearOldCache();
+    setInterval(clearOldCache, 60 * 1000); // ✅ BUG 9 FIX: Evict stale cache entries every 60s
     
     // Check authentication
     const token = getToken();
@@ -2052,6 +2341,7 @@ function setupPullToRefresh() {
     
     let startY = 0;
     let isPulling = false;
+    let refreshNotificationShown = false; // ✅ BUG 5 FIX: Only show once per pull gesture
     
     sidebar.addEventListener('touchstart', (e) => {
         if (sidebar.scrollTop === 0) {
@@ -2065,7 +2355,8 @@ function setupPullToRefresh() {
         const currentY = e.touches[0].clientY;
         const diff = currentY - startY;
         
-        if (diff > 80 && sidebar.scrollTop === 0) {
+        if (diff > 80 && sidebar.scrollTop === 0 && !refreshNotificationShown) {
+            refreshNotificationShown = true; // ✅ Show only once
             showNotification('Release to refresh', 'info');
         }
     });
@@ -2073,6 +2364,7 @@ function setupPullToRefresh() {
     sidebar.addEventListener('touchend', (e) => {
         if (!isPulling) return;
         isPulling = false;
+        refreshNotificationShown = false; // ✅ Reset for next pull gesture
         
         const currentY = e.changedTouches[0].clientY;
         const diff = currentY - startY;
@@ -2280,7 +2572,8 @@ function showDangerZoneAlert(zone, distance) {
     const alertTitle = document.getElementById('dangerZoneAlertTitle');
     const alertSubtitle = document.getElementById('dangerZoneAlertSubtitle');
     
-    if (distance < zone.radius_meters) {
+    const zoneRadius = zone.radius_meters || zone.radius || 200; // ✅ BUG 7 FIX: Normalized
+    if (distance < zoneRadius) {
         alertTitle.textContent = '🚨 You Are In A Danger Zone';
         alertSubtitle.textContent = 'Exercise extreme caution';
     } else if (distance < 200) {
