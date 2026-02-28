@@ -928,13 +928,13 @@ async function findRoutes() {
         routes = routesResponse.data.routes;
         const dangerZones = routesResponse.data.dangerZones || [];
 
-        console.log('Routes received:', routes.length);
-        console.log('First route:', routes[0]);
-        console.log('AI Insights:', routes[0]?.aiInsights);
-        console.log('Navigation Guidance:', routes[0]?.navigationGuidance);
+        console.log('Routes received:', validRoutes.length);
+        console.log('First route:', validRoutes[0]);
+        console.log('AI Insights:', validRoutes[0]?.aiInsights);
+        console.log('Navigation Guidance:', validRoutes[0]?.navigationGuidance);
 
-        // Validate routes have coordinates
-        const validRoutes = routes.filter(route => 
+        // Additional validation: routes must have coordinates
+        validRoutes = validRoutes.filter(route => 
             route && route.coordinates && Array.isArray(route.coordinates) && route.coordinates.length > 0
         );
 
@@ -942,10 +942,8 @@ async function findRoutes() {
             throw new Error('No valid routes with coordinates found');
         }
 
-        routes = validRoutes;
-
         // Display routes
-        displayRoutes(routes);
+        displayRoutes(validRoutes);
 
         // Display danger zones
         displayDangerZones(dangerZones);
